@@ -3,12 +3,21 @@
 <html lang="en-US">
 
 <head>
-  <title>stocks</title>
+  <title>Stocks</title>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="/static/css/stocks.css">
+  <script src="/static/js/stocks.js" defer></script>
 </head>
 
 <body>
-  <h1>Stocks</h1>
+  <br>
+  <div id="chart-container">
+    <input id="symbol-input" type="text">&nbsp;&nbsp;&nbsp;<button onclick="search()">Search</button>
+    <h1><span id="symbol-span">AAPL</span>&nbsp;&nbsp;&nbsp;<span id="price-span">108.54</span></h1>
+    <canvas id="chart"></canvas>
+  </div>
 </body>
 
 </html>
