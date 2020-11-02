@@ -5,6 +5,7 @@ import (
   "net"
   "os"
   "strconv"
+  "strings"
 )
 
 const (
@@ -13,13 +14,23 @@ const (
 )
 
 func main() {
-  file, err := os.OpenFile("main.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+  var path string
+  cwd, err := os.Getwd()
+  if err != nil {
+    log.Panic(err)
+  }
+  if strings.Contains(cwd, "logs") {
+    path = "./"
+  } else {
+    path = "./logs/"
+  }
+  file, err := os.OpenFile(path+"main.txt", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
   if err != nil {
     log.Fatalln("Logger Error:", err)
   }
   log.SetOutput(file)
 
-  ln, err := net.Listen("tcp", IP + PORT)
+  ln, err := net.Listen("tcp", IP+PORT)
   if err != nil {
     log.Fatalln("Error setting up logger:", err)
   }
