@@ -5,6 +5,7 @@ build() {
   echo "Started building"
   cd server
   go build .
+  gfortran -c indicators.f90 indicators.so
   cd ../logs
   go build .
   cd ..
