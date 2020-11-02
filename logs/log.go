@@ -9,7 +9,7 @@ import (
 
 const (
   IP string = "localhost"
-  PORT string = "50989"
+  PORT string = ":7000"
 )
 
 func main() {
@@ -19,7 +19,7 @@ func main() {
   }
   log.SetOutput(file)
 
-  ln, err := net.Listen("tcp", IP+PORT)
+  ln, err := net.Listen("tcp", IP + PORT)
   if err != nil {
     log.Fatalln("Error setting up logger:", err)
   }
@@ -29,11 +29,11 @@ func main() {
       log.Println(err)
       continue
     }
-    go handle(conn)
+    go handleLogConn(conn)
   }
 }
 
-func handle(conn net.Conn) {
+func handleLogConn(conn net.Conn) {
   defer conn.Close()
   var bmsg [128]byte
   conn.Write([]byte("9CONNECTED"))
