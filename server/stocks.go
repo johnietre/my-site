@@ -1,6 +1,7 @@
 package main
 
 import (
+  "encoding/json"
   "fmt"
   "log"
   "net/http"
@@ -19,10 +20,10 @@ type Order struct {
   AccountID int64 `json:"account_id"`
   Password string `json:"password"`
   Sym string `json:"sym"`
-  Qty string `json:"qty"`
+  Qty int `json:"qty"`
   Side string `json:"side"`
-  LimitPrice string `json:"limit_price"`
-  StopPrice string `json:"stop_price"`
+  LimitPrice float64 `json:"limit_price"`
+  StopPrice float64 `json:"stop_price"`
 }
 
 var (
@@ -46,8 +47,20 @@ func symbolHandler(ws *websocket.Conn) {
 }
 
 func orderHandler(ws *websocket.Conn) {
+  defer ws.Close()
   var order Order
-  websocket.JSON.Receive(ws, &order)
-  fmt.Println(order)
-  ws.Close()
+  var bmsg [512]byte
+  for {
+    l, err := ws.Read(bmsg[:])
+    if err != nil {
+      if err.Error() == "EOF" {
+        return
+      }
+      return
+    }
+    if err := json.Unmarshal(bmsg[:l], &order); err != nil {
+      continue
+    }
+    fmt.Println("Order", order)
+  }
 }

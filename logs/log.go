@@ -54,7 +54,7 @@ func handleLogConn(conn net.Conn) {
     conn.Read(bmsg[:3])
     l, err = strconv.Atoi(string(bmsg[:3]))
     if err != nil {
-      log.Println("Logger Error:", err)
+      // log.Println("Logger Error:", err)
       continue
     }
     conn.Read(bmsg[:l])

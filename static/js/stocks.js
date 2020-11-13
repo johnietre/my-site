@@ -4,13 +4,17 @@ const PORT = ":8080";
 // Get document elems
 var canvas = document.getElementById("chart");
 var ctx = canvas.getContext("2d");
+
 var symbolInput = document.getElementById("symbol-input");
 var symbolSpan = document.getElementById("symbol-span");
 var priceSpan = document.getElementById("price-span");
 
+var orderForm = document.getElementById("order-form");
+var orderButton = document.getElementById("order-button");
+
 // Connect and setup sockets
-var symSock = new WebSocket(IP+PORT, [], true);
-var orderSock = new WebSocket(IP+PORT+"/order", [], true);
+const symSock = new WebSocket("ws://"+IP+PORT, [], true);
+const orderSock = new WebSocket("ws://"+IP+PORT+"/order", [], true);
 
 // Setup canvas dimensions
 ctx.canvas.width = window.innerWidth * 0.75;
@@ -33,4 +37,20 @@ function graph(prices) {
   if (price > old) priceSpan.style = "color: green;";
   else if (price < old) priceSpan.style = "color: red;";
   else priceSpan.style = "color: black;";
+}
+
+function sendOrder() {
+  if (orderForm.hidden) {
+    orderForm.hidden = false;
+    orderButton.innerHTML = "Send Order";
+    return;
+  }
+  order = {
+    "account_id": 1234,
+    "password": "rj385637",
+    "sym": "AAPL",
+    "qty": 120,
+    "side": "sell",
+  };
+  orderSock.send(JSON.stringify(order));
 }
