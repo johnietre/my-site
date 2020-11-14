@@ -3,12 +3,11 @@ package main
 import (
   "log"
   "net"
-  "net/http"
   "os"
 )
 
 const (
-  IP string = "129.119.172.61"
+  IP string = "192.168.1.146"
   WEB_PORT string = ":8000"
   CHAT_PORT string = ":8008"
   STOCKS_PORT string = ":8080"
@@ -35,26 +34,9 @@ func main() {
   defer LogMessage("Stopping Server")
   LogMessage("Starting Servers")
 
-  webServer := http.Server{
-    Addr: IP + WEB_PORT,
-    Handler: webRoutes(),
-  }
-  stocksServer := http.Server{
-    Addr: IP + STOCKS_PORT,
-    Handler: stocksRoutes(),
-  }
-  chatServer := http.Server{
-    Addr: IP + CHAT_PORT,
-    Handler: chatRoutes(),
-  }
-
-  go func() {
-    log.Panic(webServer.ListenAndServe())
-  }()
-  go func() {
-    log.Panic(chatServer.ListenAndServe())
-  }()
-  log.Panic(stocksServer.ListenAndServe())
+  go startWeb()
+  go startChat()
+  startStocks()
 }
 
 // Used to send the most important logs to the logger server

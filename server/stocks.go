@@ -34,6 +34,14 @@ func init() {
   stocksLogger = log.New(os.Stdout, "Stocks server: ", log.LstdFlags)
 }
 
+func startStocks() {
+  stocksServer := http.Server{
+    Addr: IP + STOCKS_PORT,
+    Handler: stocksRoutes(),
+  }
+  log.Panic(stocksServer.ListenAndServe())
+}
+
 func stocksRoutes() *http.ServeMux {
   r := http.NewServeMux()
   r.Handle("/", websocket.Handler(symbolHandler))

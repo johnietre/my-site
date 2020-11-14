@@ -27,6 +27,14 @@ func init() {
   chatLogger = log.New(os.Stdout, "Chat Server: ", log.LstdFlags)
 }
 
+func startChat() {
+  chatServer := http.Server{
+    Addr: IP + CHAT_PORT,
+    Handler: chatRoutes(),
+  }
+  log.Panic(chatServer.ListenAndServe())
+}
+
 func chatRoutes() *http.ServeMux {
   r := http.NewServeMux()
   r.Handle("/", websocket.Handler(u2uHandler))
@@ -49,7 +57,7 @@ func u2bHandler(ws *websocket.Conn) {
     }
     return err != nil
   }
-  conn, err := net.Dial("tcp", BOT_IP+BOT_PORT, )
+  conn, err := net.Dial("tcp", BOT_IP+BOT_PORT)
   if check(err) {
     return
   }

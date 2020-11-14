@@ -29,6 +29,14 @@ func init() {
   }
 }
 
+func startWeb() {
+  webServer := http.Server{
+    Addr: IP + WEB_PORT,
+    Handler: webRoutes(),
+  }
+  log.Panic(webServer.ListenAndServe())
+}
+
 func webRoutes() *http.ServeMux {
   r := http.NewServeMux()
   r.HandleFunc("/", homePageHandler)
