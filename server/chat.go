@@ -8,48 +8,52 @@ package main
 import (
   "log"
   "net"
-  "net/http"
   "os"
 
   "golang.org/x/net/websocket"
 )
 
 const (
-  BOT_IP = "localhost"
-  BOT_PORT = ":7001"
+  BOT_IP string = "localhost"
+  BOT_PORT string = ":7001"
+  runSecondHub bool = false
 )
 
 var (
   chatLogger *log.Logger
+  hub1Chan chan []byte
+  hub2Chan chan []byte
 )
 
 func init() {
   chatLogger = log.New(os.Stdout, "Chat Server: ", log.LstdFlags)
-}
-
-func startChat() {
-  chatServer := http.Server{
-    Addr: IP + CHAT_PORT,
-    Handler: chatRoutes(),
+  hub1Chan = make(chan []byte, 100)
+  go startChatHub1()
+  if runSecondHub {
+    hub2Chan = make(chan []byte, 100)
+    go startChatHub2()
   }
-  log.Panic(chatServer.ListenAndServe())
 }
 
-func chatRoutes() *http.ServeMux {
-  r := http.NewServeMux()
-  r.Handle("/", websocket.Handler(u2uHandler))
-  r.Handle("/bot", websocket.Handler(u2bHandler))
-  return r
-}
-
-// u2uHandler handles User-to-User chat
-func u2uHandler(ws *websocket.Conn) {
-  ws.Close()
-}
-
-// u2bHandler handles User-to-Bot chat
-func u2bHandler(ws *websocket.Conn) {
+func chatSocketHandler(ws *websocket.Conn) {
   defer ws.Close()
+  for {
+    var bmsg [512]byte
+    if l, err := ws.Read(bmsg[:]); err != nil {
+      if err.Error() == "EOF" {
+        return
+      }
+    } else {
+      if runSecondHub {
+        select {
+        case hub1Chan <- bmsg[:l]:
+        case hub2Chan <- bmsg[:l]:
+        }
+      } else {
+        hub1Chan <- bmsg[:l]
+      }
+    }
+  }
   check := func(err error) bool {
     if err != nil {
       chatLogger.Println(err)
@@ -92,5 +96,19 @@ func u2bHandler(ws *websocket.Conn) {
     }
     _, err = ws.Write(bmsg[:l])
     check(err)
+  }
+}
+
+func startChatHub1() {
+  for {
+    msg := <- hub1Chan
+    println(msg)
+  }
+}
+
+func startChatHub2() {
+  for {
+    msg := <- hub2Chan
+    println(msg)
   }
 }

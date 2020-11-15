@@ -58,6 +58,6 @@ func handleLogConn(conn net.Conn) {
       continue
     }
     conn.Read(bmsg[:l])
-    log.Println(string(bmsg[:]))
+    // log.Println(string(bmsg[:]))
   }
 }

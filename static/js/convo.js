@@ -1,12 +1,13 @@
-const IP = "ws://129.119.172.61";
-const PORT = ":8008/bot";
+const slugIndex = window.location.href.indexOf("/convo");
+const IP = window.location.href.substring(0, slugIndex).replace("http", "ws") + "socket/";
+const PORT = ":8000";
 /*
  * Special query for bot that should be gotten using window.location.href
 */
 var field = document.getElementById("field");
 var ws = new WebSocket(IP+PORT, [], true);
 ws.onopen = function() {
-  ws.send("user");
+  console.log("user");
 };
 ws.onerror = function(err) {
   console.log(err)

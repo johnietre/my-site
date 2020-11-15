@@ -1,5 +1,5 @@
 package main
-
+/*
 import (
   "encoding/json"
   "fmt"
@@ -72,3 +72,4 @@ func orderHandler(ws *websocket.Conn) {
     fmt.Println("Order", order)
   }
 }
+*/

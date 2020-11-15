@@ -1,0 +1,22 @@
+{{define "base"}}
+<!DOCTYPE html>
+
+<html lang="en-US">
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="/static/css/base.css">
+  {{template "head"}}
+</head>
+
+<body>
+  <ul id="main-nav-bar">
+    <li class="main-nav-bar-li"><a class="main-nav-link" href="/">Home</a></li>
+    <li class="main-nav-bar-li"><a class="main-nav-link" href="/stocks">Stocks</a></li>
+    <li class="main-nav-bar-li"><a class="main-nav-link" href="/chat">Chat</a></li>
+  </ul>
+  {{template "body"}}
+</body>
+
+</html>
+{{end}}

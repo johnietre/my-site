@@ -14,78 +14,106 @@ import (
 
 var (
   pageLogger *log.Logger
-  templatesPath string
-  staticPath string
+  homeTemplates *template.Template
+  stocksTemplates *template.Template
+  chatTemplates *template.Template
+  convoTemplates *template.Template
+  baseTempName string
 )
 
 func init() {
   pageLogger = log.New(os.Stdout, "Page Server: ", log.LstdFlags)
+  // Conditional possibly unneeded
   if strings.Contains(cwd, "server") {
-    templatesPath = "../templates/"
-    staticPath = "../static/"
+    baseTempName = "../templates/base.html"
+    homeTemplates = template.Must(template.ParseFiles(
+      baseTempName,
+      "../templates/home.html"))
+    stocksTemplates = template.Must(template.ParseFiles(
+      baseTempName,
+      "../templates/stocks.html"))
+    chatTemplates = template.Must(template.ParseFiles(
+      baseTempName,
+      "../templates/chat.html"))
+    convoTemplates = template.Must(template.ParseFiles(
+      baseTempName,
+      "../templates/chat.html"))
   } else {
-    templatesPath = "templates/"
-    staticPath = "static/"
+    baseTempName = "templates/base.html"
+    homeTemplates = template.Must(template.ParseFiles(
+      baseTempName,
+      "templates/home.html"))
+    stocksTemplates = template.Must(template.ParseFiles(
+      baseTempName,
+      "templates/stocks.html"))
+    chatTemplates = template.Must(template.ParseFiles(
+      baseTempName,
+      "templates/chat.html"))
+    convoTemplates = template.Must(template.ParseFiles(
+      baseTempName,
+      "templates/chat.html"))
   }
 }
 
-func startWeb() {
-  webServer := http.Server{
-    Addr: IP + WEB_PORT,
-    Handler: webRoutes(),
+func parse() {
+  if strings.Contains(cwd, "server") {
+    baseTempName = "../templates/base.html"
+    homeTemplates = template.Must(template.ParseFiles(
+      baseTempName,
+      "../templates/home.html"))
+    stocksTemplates = template.Must(template.ParseFiles(
+      baseTempName,
+      "../templates/stocks.html"))
+    chatTemplates = template.Must(template.ParseFiles(
+      baseTempName,
+      "../templates/chat.html"))
+    convoTemplates = template.Must(template.ParseFiles(
+      baseTempName,
+      "../templates/convo.html"))
+  } else {
+    baseTempName = "templates/base.html"
+    homeTemplates = template.Must(template.ParseFiles(
+      baseTempName,
+      "templates/home.html"))
+    stocksTemplates = template.Must(template.ParseFiles(
+      baseTempName,
+      "templates/stocks.html"))
+    chatTemplates = template.Must(template.ParseFiles(
+      baseTempName,
+      "templates/chat.html"))
+    convoTemplates = template.Must(template.ParseFiles(
+      baseTempName,
+      "templates/convo.html"))
   }
-  log.Panic(webServer.ListenAndServe())
-}
-
-func webRoutes() *http.ServeMux {
-  r := http.NewServeMux()
-  r.HandleFunc("/", homePageHandler)
-  r.HandleFunc("/stocks", stocksPageHandler)
-  r.HandleFunc("/chat", chatPageHandler)
-  r.HandleFunc("/convo", convoPageHandler)
-
-  static := http.FileServer(http.Dir(staticPath))
-  r.Handle("/static/", http.StripPrefix("/static", static))
-
-  return r
 }
 
 func homePageHandler(w http.ResponseWriter, r *http.Request) {
-  if ts, err := template.ParseFiles(templatesPath+"home.html"); err != nil {
+  parse()
+  if err := homeTemplates.ExecuteTemplate(w, "home.html", nil); err != nil {
     http.Error(w, "Internal Server Error", http.StatusInternalServerError)
     pageLogger.Println(err)
-    return
-  } else {
-    ts.Execute(w, nil)
   }
 }
 
 func stocksPageHandler(w http.ResponseWriter, r *http.Request) {
-  if ts, err := template.ParseFiles(templatesPath+"stocks.html"); err != nil {
+  parse()
+  if err := stocksTemplates.ExecuteTemplate(w, "stocks.html", nil); err != nil {
     http.Error(w, "Internal Server Error", http.StatusInternalServerError)
     pageLogger.Println(err)
-    return
-  } else {
-    ts.Execute(w, nil)
   }
 }
 
 func chatPageHandler(w http.ResponseWriter, r *http.Request) {
-  if ts, err := template.ParseFiles(templatesPath+"chat.html"); err != nil {
-    http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-    pageLogger.Println(err)
-    return
+  parse()
+  if strings.HasSuffix(r.URL.Path, "/chat/") {
+    if err := chatTemplates.ExecuteTemplate(w, "chat.html", nil); err != nil {
+      http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+      pageLogger.Println(err)
+    }
   } else {
-    ts.Execute(w, nil)
-  }
-}
-
-func convoPageHandler(w http.ResponseWriter, r *http.Request) {
-  if ts, err := template.ParseFiles(templatesPath+"convo.html"); err != nil {
-    http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-    pageLogger.Println(err)
-    return
-  } else {
-    ts.Execute(w, nil)
+    if err := convoTemplates.ExecuteTemplate(w, "convo.html", nil); err != nil {
+      http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+      pageLogger.Println(err)
+    }
   }
 }

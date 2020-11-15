@@ -1,18 +1,22 @@
-<!DOCTYPE html>
+{{template "base" .}}
+{{define "head"}}
+<title>Chat</title>
+<link rel="stylesheet" href="/static/css/chat.css">
+<script src="/static/js/chat.js"></script>
+{{end}}
 
-<html lang="en-US">
-
-<head>
-  <title>chat</title>
-  <meta charset="UTF-8">
-
-  <link rel="stylesheet" href="/static/chat.css">
-  <script src="/static/chat.js"></script>
-</head>
-
-<body style="background-color: black; color: white;">
-  <h1 style="text-align: center;">Chat</h1>
-  <a href="/convo">Bot</a>
-</body>
-
-</html>
+{{define "body"}}
+<h1>Chat</h1>
+<div id="chat-div">
+  <div id="convos-div">
+    <ul id="convos-list">
+      <li>Hell</li>
+      <li>Nah</li>
+    </ul>
+  </div>
+  <div id="convo-div">
+    <!-- <h1 style="color: white; text-align: center;">Hello</h1> -->
+    <iframe id="convo-frame" src="/chat/convo" title="Conversations" width="100%" height="100%"></iframe>
+  </div>
+</div>
+{{end}}

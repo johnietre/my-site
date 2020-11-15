@@ -1,64 +1,30 @@
-<!DOCTYPE html>
+{{template "base" .}}
+{{define "head"}}
+<title>Stocks</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/static/css/stocks.css">
+<script src="/static/js/stocks.js" defer></script>
+{{end}}
 
-<html lang="en-US">
-
-<head>
-  <title>Stocks</title>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <link rel="stylesheet" href="/static/css/stocks.css">
-  <script src="/static/js/stocks.js" defer></script>
-  <style>
-    html, body {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-    }
-
-    body {
-      background-color: black;
-      color: white;
-    }
-
-    #chart-div {
-      width: 100%;
-      text-align: center;
-    }
-
-    #order-div {
-      text-align: center;
-    }
-
-    canvas {
-      border: 1px solid #FFFFFF;
-      /* position: absolute; */
-      display: inline;
-    }
-  </style>
-</head>
-
-<body>
-  <br>
-  <div id="chart-div">
-    <input id="symbol-input" type="text">&nbsp;&nbsp;&nbsp;<button onclick="search()">Search</button>
-    <h1><span id="symbol-span">AAPL</span>&nbsp;&nbsp;&nbsp;<span id="price-span">108.54</span></h1>
-    <canvas id="chart"></canvas>
-  </div>
-  <br>
-  <div id="order-div">
-    <button id="order-button" onclick="sendOrder()">Create Order</button>
-    <form id="order-form" hidden>
-      <label for="qty-input">Quantity: </label>
-      <input type="text" name="qty-input"><br>
-      <input type="radio" id="buy-radio" name="order-radio">
-      <label for="buy-radio">Buy</label><br>
-      <input type="radio" id="sell-radio" name="order-radio">
-      <label for="sell-radio">Sell</label><br>
-      <label for="password-input">Password: </label>
-      <input type="password" name="password-input"><br>
-    </form>
-  </div>
-</body>
-
-</html>
+{{define "body"}}
+<br>
+<div id="chart-div">
+  <input id="symbol-input" type="text">&nbsp;&nbsp;&nbsp;<button onclick="search()">Search</button>
+  <h1><span id="symbol-span">AAPL</span>&nbsp;&nbsp;&nbsp;<span id="price-span">108.54</span></h1>
+  <canvas id="chart"></canvas>
+</div>
+<br>
+<div id="order-div">
+  <button id="order-button" onclick="sendOrder()">Create Order</button>
+  <form id="order-form" hidden>
+    <label for="qty-input">Quantity: </label>
+    <input type="text" name="qty-input"><br>
+    <input type="radio" id="buy-radio" name="order-radio">
+    <label for="buy-radio">Buy</label><br>
+    <input type="radio" id="sell-radio" name="order-radio">
+    <label for="sell-radio">Sell</label><br>
+    <label for="password-input">Password: </label>
+    <input type="password" name="password-input"><br>
+  </form>
+</div>
+{{end}}
