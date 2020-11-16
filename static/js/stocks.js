@@ -1,4 +1,4 @@
-const IP = "129.119.172.61";
+const IP = "localhost";
 const PORT = ":8080";
 
 // Get document elems
@@ -11,6 +11,7 @@ var priceSpan = document.getElementById("price-span");
 
 var orderForm = document.getElementById("order-form");
 var orderButton = document.getElementById("order-button");
+var cancelButton = document.getElementById("cancel-order-button");
 
 // Connect and setup sockets
 const symSock = new WebSocket("ws://"+IP+PORT, [], true);
@@ -21,11 +22,12 @@ ctx.canvas.width = window.innerWidth * 0.75;
 ctx.canvas.height = window.innerWidth * 0.30;
 
 // Search for a symbol
-function search() {
+function searchSymbol() {
   var sym = symbolInput.value.toUpperCase();
   stock = {"sym": sym};
   symSock.send(JSON.stringify(stock));
   symbolSpan.innerHTML = sym;
+  symbolInput.value = sym;
 }
 
 // Graph the symbol
@@ -43,6 +45,7 @@ function sendOrder() {
   if (orderForm.hidden) {
     orderForm.hidden = false;
     orderButton.innerHTML = "Send Order";
+    cancelButton.hidden = false;
     return;
   }
   order = {
@@ -53,4 +56,10 @@ function sendOrder() {
     "side": "sell",
   };
   orderSock.send(JSON.stringify(order));
+}
+
+function cancelOrder() {
+  orderForm.hidden = true;
+  cancelButton.hidden = true;
+  orderButton.innerHTML = "Create Order";
 }

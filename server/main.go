@@ -11,8 +11,9 @@ import (
 )
 
 const (
-  IP string = "192.168.1.98"
+  IP string = "localhost"
   PORT string = ":8000"
+  STOCKS_PORT string = ":8080"
 )
 
 var (

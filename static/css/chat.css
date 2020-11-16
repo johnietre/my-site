@@ -1,13 +1,12 @@
 #chat-div {
   width: 100%;
-  height: 100%;
   display: flex;
 }
 #convos-div {
   overflow: auto;
   width: 20%;
 }
-#convo-div {
+#convo-frame-div {
   flex-grow: 1;
 }
 #convos-list {

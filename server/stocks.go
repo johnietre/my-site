@@ -1,5 +1,5 @@
 package main
-/*
+
 import (
   "encoding/json"
   "fmt"
@@ -35,11 +35,11 @@ func init() {
 }
 
 func startStocks() {
-  stocksServer := http.Server{
+  server := http.Server{
     Addr: IP + STOCKS_PORT,
     Handler: stocksRoutes(),
   }
-  log.Panic(stocksServer.ListenAndServe())
+  log.Panic(server.ListenAndServe())
 }
 
 func stocksRoutes() *http.ServeMux {
@@ -72,4 +72,3 @@ func orderHandler(ws *websocket.Conn) {
     fmt.Println("Order", order)
   }
 }
-*/
