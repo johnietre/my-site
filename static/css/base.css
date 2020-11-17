@@ -9,6 +9,10 @@
   top: 0;
 }
 
+#login-logout {
+  float: right;
+}
+
 .main-nav-bar-li {
   float: left;
 }

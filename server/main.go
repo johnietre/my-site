@@ -76,6 +76,8 @@ func routes() *http.ServeMux {
 	r.HandleFunc("/", homePageHandler)
 	r.HandleFunc("/chat/", chatPageHandler)
 	r.HandleFunc("/stocks", stocksPageHandler)
+	r.HandleFunc("/login", loginPageHandler)
+	r.HandleFunc("/register", registerPageHandler)
 	r.Handle("/chatsocket/", websocket.Handler(chatSocketHandler))
 
 	// Check the cwd to see where the templates and static directories are

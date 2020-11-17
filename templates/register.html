@@ -1,0 +1,25 @@
+{{template "base" .}}
+{{define "head"}}
+<title>Register</title>
+<link rel="stylesheet" href="/static/css/register.css">
+<script src="/static/js/register.js" defer></script>
+{{end}}
+
+{{define "body"}}
+<h1>Welcome!</h1>
+<form id="register-form" method="POST">
+  <label for="fname-input">First Name: </label>
+  <input id="fname-input" type="text" required><br>
+  <label for="lname-input">Last Name: </label>
+  <input id="lname-input" type="text" required><br>
+  <label for="email-input">Email: </label>
+  <input id="email-input" type="email" required><br>
+  <label for="password-input">Password: </label>
+  <input id="password-input" type="password" required><br>
+  <label for="confirmation-input">Confirm Password: </label>
+  <input id="confirmation-input" type="password" required><br>
+  <input id="submit-input" type="submit" value="Register">
+</form>
+<a href="/login">Already have an account?</a>
+<p id="error-p" hidden>{{.ErrMsg}}</p>
+{{end}}
