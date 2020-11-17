@@ -5,7 +5,7 @@ const IP = window.location.href.substring(0, slugIndex).replace("http", "ws") + 
 const PORT = ":8000";
 /*
  * Special query for bot that should be gotten using window.location.href
-*/
+ */
 var field = document.getElementById("field");
 var ws = new WebSocket(IP+PORT, [], true);
 ws.onopen = function() {

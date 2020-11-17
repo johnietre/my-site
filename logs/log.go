@@ -8,12 +8,14 @@ import (
   "strings"
 )
 
-const (
-  IP string = "localhost"
-  PORT string = ":7000"
+var (
+  IP string = os.Getenv("LOG_IP")
+  PORT string = os.Getenv("LOG_PORT")
 )
 
 func main() {
+  // Get the current working directory (either MySite or logs)
+  // Based on the cwd, make sure the log file is being placed in the correct place
   var path string
   cwd, err := os.Getwd()
   if err != nil {
@@ -30,7 +32,16 @@ func main() {
   }
   log.SetOutput(file)
 
-  ln, err := net.Listen("tcp", IP+PORT)
+  // Check to make sure the IP and PORT environment variables have been set
+  if IP == "" {
+    log.Println(`Environ variable "LOG_IP" not set... using "localhost"`)
+    IP = "localhost"
+  }
+  if PORT == "" {
+    log.Println(`Environ variable "LOG_PORT" not set... using "7000"`)
+  }
+  // Start listening to logs
+  ln, err := net.Listen("tcp", IP+":"+PORT)
   if err != nil {
     log.Fatalln("Error setting up logger:", err)
   }
@@ -44,6 +55,7 @@ func main() {
   }
 }
 
+// Handle each program's logging
 func handleLogConn(conn net.Conn) {
   defer conn.Close()
   var bmsg [128]byte
