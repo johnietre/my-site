@@ -25,6 +25,16 @@
   text-decoration: none;
 }
 
+.login-register-name-link {
+  color: white;
+  text-align: center;
+  text-decoration: none;
+}
+
+#link-p {
+  display: block;
+}
+
 body {
   background-color: black;
   color: white;

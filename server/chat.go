@@ -14,8 +14,8 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-type UserMap struct {
-	users map[string]*websocket.Conn
+type ConnMap struct {
+	conns map[string]*websocket.Conn
 	sync.RWMutex
 }
 
@@ -33,12 +33,12 @@ var (
 	chatLogger *log.Logger
 	hub1Chan   chan *Message
 	hub2Chan   chan *Message
-	users      UserMap
+	conns      ConnMap
 )
 
 func init() {
 	chatLogger = log.New(os.Stdout, "Chat Server: ", log.LstdFlags)
-	users.users = make(map[string]*websocket.Conn)
+	conns.conns = make(map[string]*websocket.Conn)
 	hub1Chan = make(chan *Message, 100)
 	go startChatHub(hub1Chan)
 	if runSecondHub {
@@ -91,51 +91,51 @@ func chatSocketHandler(ws *websocket.Conn) {
 func startChatHub(hubChan chan *Message) {
 	// Loop through the channel
 	for msg := range hubChan {
-		// Make sure the users map is safe for reading
-		users.RLock()
+		// Make sure the conns map is safe for reading
+		conns.RLock()
 		for _, user := range msg.to {
 			// Check to see if the user is connected
 			// If so, send the message
-			ws := users.users[user]
+			ws := conns.conns[user]
 			if ws != nil {
 				websocket.JSON.Send(ws, *msg)
 			}
 			// Database message
 		}
-		users.RUnlock()
+		conns.RUnlock()
 	}
 }
 
-// Adds a user to the map of users
+// Adds a user to the map of conns
 func addUser(username string, ws *websocket.Conn) {
 	// Do a full lock since the user will always be added,
 	// even if they are already logged in
-	users.Lock()
-	defer users.Unlock()
+	conns.Lock()
+	defer conns.Unlock()
 	// Check to see if the user is logged in elsewhere
 	// If so, let that socket know that they are being logged out
-	user := users.users[username]
+	user := conns.conns[username]
 	if user != nil {
 		user.Write([]byte("Signed in elsewhere"))
 	}
-	users.users[username] = ws
+	conns.conns[username] = ws
 }
 
-// Removes a user from the map of users
+// Removes a user from the map of conns
 func removeUser(username string, ws *websocket.Conn) {
 	// Use an RLock to check if the user to be removed is the same as the one
 	// in the map by comparing websockets
-	users.RLock()
-	if users.users[username] == ws {
-		// If the users are the same, do a full lock and check one more time
-		users.Lock()
-		if users.users[username] == ws {
+	conns.RLock()
+	if conns.conns[username] == ws {
+		// If the conns are the same, do a full lock and check one more time
+		conns.Lock()
+		if conns.conns[username] == ws {
 			// If they are still the same, delete the user from the map
-			delete(users.users, username)
+			delete(conns.conns, username)
 		}
-		users.Unlock()
+		conns.Unlock()
 	}
-	users.RUnlock()
+	conns.RUnlock()
 }
 
 // Creates a new message

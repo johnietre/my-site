@@ -7,6 +7,7 @@ build() {
   echo "Building..."
   cd server
   go build .
+  chmod a+x chat.py
   cd others
   # f95 -c utils.f90
   # f95 -c indicators.f90 -o indicators.so

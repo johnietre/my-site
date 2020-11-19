@@ -6,10 +6,23 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 )
 
 type PageData struct {
 	ErrMsg string
+}
+
+type User struct {
+	firstname string
+	lastname string
+	email string
+	password string
+}
+
+type UserMap struct {
+	users map[string]*User
+	sync.RWMutex
 }
 
 var (
@@ -21,6 +34,7 @@ var (
 	loginTemplates *template.Template
 	registerTemplates *template.Template
 	tDir string
+	users UserMap
 )
 
 func init() {
@@ -33,6 +47,9 @@ func init() {
 	}
 	// Load the templates
 	parse()
+
+	users.users = make(map[string]*User)
+	users.Register("Johnie", "Rodgers", "johnietre@gmail.com", "Rj385637")
 }
 
 func parse() {
@@ -92,17 +109,17 @@ func loginPageHandler(w http.ResponseWriter, r *http.Request) {
 	pageData := newPageData()
 	loggedIn := false
 	if r.Method == http.MethodPost {
-		email := r.FormValue("email")
-		password := r.FormValue("password")
-		println(email, password)
-		if email != "johnietre@gmail.com" {
-			pageData.ErrMsg = "Invalid email or password"
-		} else {
+		email := r.PostFormValue("email")
+		password := r.PostFormValue("password")
+		if users.Login(email, password) {
 			loggedIn = true
+			println(email, "logged in")
+		} else {
+			pageData.ErrMsg = "Invalid email or password"
 		}
 	}
 	if loggedIn {
-		homePageHandler(w, r)
+		http.Redirect(w, r, "129.119.172.61:8000/stocks", http.StatusFound)
 	} else {
 		if err := loginTemplates.ExecuteTemplate(w, "login.html", pageData); err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -116,19 +133,21 @@ func registerPageHandler(w http.ResponseWriter, r *http.Request) {
 	pageData := newPageData()
 	registered := false
 	if r.Method == http.MethodPost {
-		fname := r.FormValue("fname")
-		lname := r.FormValue("lname")
-		email := r.FormValue("email")
-		password := r.FormValue("password")
+		fname := r.PostFormValue("fname")
+		lname := r.PostFormValue("lname")
+		email := r.PostFormValue("email")
+		password := r.PostFormValue("password")
 		println(fname, lname, email, password)
-		if email == "johnietre@gmail.com" {
-			pageData.ErrMsg = "Email already assigned to account"
-		} else {
+		if users.Register(fname, lname, email, password) {
 			registered = true
+			println(fname, lname, email, "registered")
+		} else {
+			println(email, "Nope")
+			pageData.ErrMsg = "Email already assigned to account"
 		}
 	}
 	if registered {
-		http.Redirect(w, r, "/", http.StatusAccepted)
+		http.Redirect(w, r, "/", http.StatusFound)
 	} else {
 		if err := registerTemplates.ExecuteTemplate(w, "register.html", pageData); err != nil {
 			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -141,4 +160,36 @@ func registerPageHandler(w http.ResponseWriter, r *http.Request) {
 func newPageData() *PageData {
 	page := &PageData{""}
 	return page
+}
+
+/* UserMap */
+func (umap *UserMap) Register(fname, lname, email, password string) bool {
+	if fname == "" || lname == "" {
+		return false
+	}
+	umap.RLock()
+	user := umap.users[email]
+	umap.RUnlock()
+	if user != nil {
+		return false
+	}
+	umap.Lock()
+	defer umap.Unlock()
+	user = umap.users[email]
+	if user != nil {
+		return false
+	}
+	user = &User{fname, lname, email, password}
+	umap.users[email] = user
+	return true
+}
+
+func (umap *UserMap) Login(email, password string) bool {
+	umap.RLock()
+	defer umap.RUnlock()
+	user := umap.users[email]
+	if user == nil {
+		return false
+	}
+	return user.password == password
 }
