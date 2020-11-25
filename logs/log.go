@@ -8,6 +8,11 @@ import (
   "strings"
 )
 
+const (
+  DEFAULT_IP string = "localhost"
+  DEFAULT_PORT string = "7000"
+)
+
 var (
   IP string = os.Getenv("LOG_IP")
   PORT string = os.Getenv("LOG_PORT")
@@ -34,11 +39,14 @@ func main() {
 
   // Check to make sure the IP and PORT environment variables have been set
   if IP == "" {
-    log.Println(`Environ variable "LOG_IP" not set... using "localhost"`)
-    IP = "localhost"
+    log.Printf(`Environ variable "LOG_IP" not set... using "%s"`, DEFAULT_IP)
+    log.Println("")
+    IP = DEFAULT_IP
   }
   if PORT == "" {
-    log.Println(`Environ variable "LOG_PORT" not set... using "7000"`)
+    log.Printf(`Environ variable "LOG_PORT" not set... using "%s"`, DEFAULT_PORT)
+    log.Println("")
+    PORT = DEFAULT_PORT
   }
   // Start listening to logs
   ln, err := net.Listen("tcp", IP+":"+PORT)

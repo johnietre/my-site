@@ -10,6 +10,14 @@ import (
 	"golang.org/x/net/websocket"
 )
 
+const (
+	DEFAULT_IP          string = "192.168.1.125"
+	DEFAULT_PORT        string = "8000"
+	DEFAULT_STOCKS_PORT string = "8080"
+	DEFAULT_LOG_IP      string = "localhost"
+	DEFAULT_LOG_PORT    string = "7000"
+)
+
 var (
 	IP             string = os.Getenv("IP")          // IP for the server
 	PORT           string = os.Getenv("PORT")        // port for the server
@@ -32,30 +40,35 @@ func init() {
 
 	// Check to make sure all the IPs and PORTs have been set
 	if IP == "" {
-		log.Println(`Environ variable "IP" not set... using "129.119.172.61"`)
-		IP = "129.119.172.61"
+		log.Printf(`Environ variable "IP" not set... using "%s"`, DEFAULT_IP)
+		log.Println("")
+		IP = DEFAULT_IP
 	}
 	if PORT == "" {
-		log.Println(`Environ variable "PORT" not set... using "8000"`)
-		PORT = "8000"
+		log.Printf(`Environ variable "PORT" not set... using "%s"`, DEFAULT_PORT)
+		log.Println("")
+		PORT = DEFAULT_PORT
 	}
 	if STOCKS_PORT == "" {
-		log.Println(`Environ variable "STOCKS_PORT" not set... using "8080"`)
-		STOCKS_PORT = "8080"
+		log.Printf(`Environ variable "STOCKS_PORT" not set... using "%s"`, DEFAULT_STOCKS_PORT)
+		log.Println("")
+		STOCKS_PORT = DEFAULT_STOCKS_PORT
 	}
 	if LOG_IP == "" {
-		log.Println(`Environ variable "LOG_IP" not set... using "localhost"`)
-		LOG_IP = "localhost"
+		log.Printf(`Environ variable "LOG_IP" not set... using "%s"`, DEFAULT_LOG_IP)
+		log.Println("")
+		LOG_IP = DEFAULT_LOG_IP
 	}
 	if LOG_PORT == "" {
-		log.Println(`Environ variable "LOG_PORT" not set... using "7000"`)
-		LOG_PORT = "7000"
+		log.Printf(`Environ variable "LOG_PORT" not set... using "%s"`, DEFAULT_LOG_PORT)
+		log.Println("")
+		LOG_PORT = DEFAULT_LOG_PORT
 	}
 
 	// Connect to the log server
-	logConn, err = net.Dial("tcp", LOG_PORT+":"+LOG_PORT)
+	logConn, err = net.Dial("tcp", LOG_IP+":"+LOG_PORT)
 	if err != nil {
-		log.Println("Error connecting to logger:", err)
+		log.Println("Error connecting main to logger:", err)
 		connectedToLog = false
 	}
 }

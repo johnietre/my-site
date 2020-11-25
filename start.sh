@@ -38,7 +38,7 @@ restartserver() {
   echo "Server restarted"
 }
 
-export IP="129.119.172.61"
+export IP="192.168.1.125"
 export PORT="8000"
 export STOCKS_PORT="8080"
 export BOT_PORT="8008"

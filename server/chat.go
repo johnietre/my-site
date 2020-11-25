@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"time"
 
 	"golang.org/x/net/websocket"
 )
@@ -25,44 +26,68 @@ type Message struct {
 	Msg    string `json:"msg"`
 }
 
+type UsageTracker struct {
+	time int64 // Total time in milliseconds
+	num  int64 // Number of messages sent
+	sync.Mutex
+}
+
+func (ut *UsageTracker) AddTime(t int64) {
+	ut.Lock()
+	defer ut.Unlock()
+	ut.time += t
+	ut.num++
+}
+
+func (ut *UsageTracker) Reset() (t, n int64) {
+	ut.Lock()
+	defer ut.Unlock()
+	t, n = ut.time, ut.num
+	ut.time = 0
+	ut.num = 0
+	return
+}
+
 const (
-	runSecondHub bool = false
+	chanBuffer int           = 100  // The number of messages a hub can have buffered
+	mins       time.Duration = 1    // Number of minutes to wait before checking usage
+	upperBound float32       = 1000 // If the usage time is above this threshold, another hub is added; in ms
+	lowerBound float32       = 0    // If the usage time is below this threshold, a hub is removed; in ms
 )
 
 var (
 	chatLogger *log.Logger
-	hub1Chan   chan *Message
-	hub2Chan   chan *Message
+	hubList    SLList
 	conns      ConnMap
+	usage      UsageTracker // Tracks the number of messages send and time to send them
 )
 
 func init() {
 	chatLogger = log.New(os.Stdout, "Chat Server: ", log.LstdFlags)
 	conns.conns = make(map[string]*websocket.Conn)
-	hub1Chan = make(chan *Message, 100)
-	go startChatHub(hub1Chan)
-	if runSecondHub {
-		hub2Chan = make(chan *Message, 100)
-		go startChatHub(hub2Chan)
+	c := make(chan *Message, chanBuffer)
+	hubList.Append(c)
+	go startChatHub(c, hubList.Length())
+}
+
+func check(err error) bool {
+	if err != nil {
+		chatLogger.Println(err)
+		// ws.Write([]byte("ERROR"))
 	}
+	return err != nil
 }
 
 func chatSocketHandler(ws *websocket.Conn) {
 	defer ws.Close()
 
-	// check := func(err error) bool {
-	//   if err != nil {
-	//     chatLogger.Println(err)
-	//     ws.Write([]byte("ERROR"))
-	//   }
-	//   return err != nil
-	// }
-
 	// Get username
 	var username string
 	err := websocket.Message.Receive(ws, &username)
 	if err != nil {
-		chatLogger.Println(err)
+		if err.Error() != "EOF" {
+			chatLogger.Println(err)
+		}
 		return
 	}
 	defer removeUser(username, ws)
@@ -76,33 +101,26 @@ func chatSocketHandler(ws *websocket.Conn) {
 			}
 		} else {
 			msg := newMsg(bmsg[:l])
-			if runSecondHub {
-				select {
-				case hub1Chan <- msg:
-				case hub2Chan <- msg:
-				}
-			} else {
-				hub1Chan <- msg
-			}
+			sendMessage(msg)
 		}
 	}
 }
 
-func startChatHub(hubChan chan *Message) {
-	// Loop through the channel
-	for msg := range hubChan {
-		// Make sure the conns map is safe for reading
-		conns.RLock()
-		for _, user := range msg.to {
-			// Check to see if the user is connected
-			// If so, send the message
-			ws := conns.conns[user]
-			if ws != nil {
-				websocket.JSON.Send(ws, *msg)
+func sendMessage(msg *Message) {
+	hubList.RLock()
+	defer hubList.RUnlock()
+	start := time.Now()
+	for {
+		for node := hubList.head; node != nil; node = node.next {
+			c := node.data.(chan *Message)
+			select {
+			case c <- msg:
+				d := time.Since(start)
+				usage.AddTime(d.Milliseconds())
+				return
+			default:
 			}
-			// Database message
 		}
-		conns.RUnlock()
 	}
 }
 
@@ -147,4 +165,49 @@ func newMsg(bytes []byte) *Message {
 		return nil
 	}
 	return msg
+}
+
+func startChatHub(hubChan chan *Message, num int) {
+	chatLogger.Printf("Starting hub %d\n", num)
+	defer chatLogger.Printf("Hub %d stopped\n", num)
+	// Loop through the channel
+	for msg := range hubChan {
+		// Make sure the conns map is safe for reading
+		conns.RLock()
+		for _, user := range msg.to {
+			// Check to see if the user is connected
+			// If so, send the message
+			ws := conns.conns[user]
+			if ws != nil {
+				websocket.JSON.Send(ws, *msg)
+			}
+			// Database message
+		}
+		conns.RUnlock()
+	}
+}
+
+func monitorUsage() {
+	useChan := make(chan float32)
+	timer := time.AfterFunc(time.Minute*mins, func() {
+		ms, n := usage.Reset()
+		useChan <- float32(ms) / float32(n)
+	})
+	for {
+		select {
+		case avg := <-useChan:
+			if avg < lowerBound {
+				if hubList.Length() != 1 {
+					node := hubList.PopLast()
+					c := node.data.(chan *Message)
+					close(c)
+				}
+			} else if avg > upperBound {
+				c := make(chan *Message, chanBuffer)
+				hubList.Append(c)
+				go startChatHub(c, hubList.Length())
+			}
+			timer.Reset(time.Minute * mins)
+		}
+	}
 }

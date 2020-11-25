@@ -15,9 +15,9 @@ type PageData struct {
 
 type User struct {
 	firstname string
-	lastname string
-	email string
-	password string
+	lastname  string
+	email     string
+	password  string
 }
 
 type UserMap struct {
@@ -26,15 +26,15 @@ type UserMap struct {
 }
 
 var (
-	pageLogger      *log.Logger
-	homeTemplates   *template.Template
-	stocksTemplates *template.Template
-	chatTemplates   *template.Template
-	convoTemplates  *template.Template
-	loginTemplates *template.Template
+	pageLogger        *log.Logger
+	homeTemplates     *template.Template
+	stocksTemplates   *template.Template
+	chatTemplates     *template.Template
+	convoTemplates    *template.Template
+	loginTemplates    *template.Template
 	registerTemplates *template.Template
-	tDir string
-	users UserMap
+	tDir              string
+	users             UserMap
 )
 
 func init() {
