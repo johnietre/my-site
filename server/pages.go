@@ -10,10 +10,12 @@ import (
 	"sync"
 )
 
+// PageData holds data for the webpage
 type PageData struct {
 	ErrMsg string
 }
 
+// User holds data about the user
 type User struct {
 	firstname string
 	lastname  string
@@ -21,6 +23,7 @@ type User struct {
 	password  string
 }
 
+// UserMap holds key-value pairs for user emails and User structs
 type UserMap struct {
 	users map[string]*User
 	sync.RWMutex
@@ -101,8 +104,10 @@ func chatPageHandler(w http.ResponseWriter, r *http.Request) {
 		// Check to see if the sender has a convo with the recipient
 		// If not, start a new one
 		w.Header().Set("CONTENT-TYPE", "application/json")
-		writer = json.NewEncoder(w)
-		writer.Encode(msgs)
+		writer := json.NewEncoder(w)
+		// writer.Encode(msgs)
+		log.Printf("%T\n", writer)
+
 	}
 }
 
@@ -165,6 +170,8 @@ func newPageData() *PageData {
 }
 
 /* UserMap */
+
+// Register checks if a user exists and registers them
 func (umap *UserMap) Register(fname, lname, email, password string) bool {
 	if fname == "" || lname == "" {
 		return false
@@ -186,6 +193,7 @@ func (umap *UserMap) Register(fname, lname, email, password string) bool {
 	return true
 }
 
+// Login checks if a user exists and logs them in
 func (umap *UserMap) Login(email, password string) bool {
 	umap.RLock()
 	defer umap.RUnlock()

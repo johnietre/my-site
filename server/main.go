@@ -106,7 +106,7 @@ func routes() *http.ServeMux {
 	return r
 }
 
-// Used to send the most important logs to the logger server
+// LogMessage is used to send the most important logs to the logger server
 func LogMessage(msg string) {
 	if !connectedToLog {
 		log.Println(msg)
