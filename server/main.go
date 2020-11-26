@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	DEFAULT_IP          string = "192.168.1.125"
-	DEFAULT_PORT        string = "8000"
+	DEFAULT_IP          string = "192.168.1.137"
+	DEFAULT_PORT        string = "443"
 	DEFAULT_STOCKS_PORT string = "8080"
 	DEFAULT_LOG_IP      string = "localhost"
 	DEFAULT_LOG_PORT    string = "7000"

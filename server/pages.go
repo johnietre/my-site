@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"html/template"
 	"log"
 	"net/http"
@@ -97,10 +98,11 @@ func chatPageHandler(w http.ResponseWriter, r *http.Request) {
 			pageLogger.Println(err)
 		}
 	} else {
-		if err := convoTemplates.ExecuteTemplate(w, "convo.html", nil); err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-			pageLogger.Println(err)
-		}
+		// Check to see if the sender has a convo with the recipient
+		// If not, start a new one
+		w.Header().Set("CONTENT-TYPE", "application/json")
+		writer = json.NewEncoder(w)
+		writer.Encode(msgs)
 	}
 }
 

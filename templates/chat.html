@@ -1,4 +1,3 @@
-<!-- Switch chat and conve (make chat iframe and convo main) -->
 {{template "base" .}}
 {{define "head"}}
 <title>Chat</title>
@@ -7,18 +6,40 @@
 {{end}}
 
 {{define "body"}}
-<h1>Chat</h1>
+<h1 style="text-align: center;">Chat</h1>
 <div id="chat-div">
   <div id="convos-div">
+    <input id="user-search" type="email" placeholder="User Email" hidden>
     <ul id="convos-list">
-      <li><button onclick="getBot()">Chat with the Bot</button></li>
-      <li><button onclick="getConvo(this)">Heck</button></li>
-      <li><button onclick="getConvo(this)">Nah</button></li>
+      <li><button onclick="newConvo()">New Chat</button></li>
+      <li><button onclick="getBot()">Chat With Bot</button></li>
     </ul>
   </div>
   <div id="convo-frame-div">
-    <!-- <h1 style="color: white; text-align: center;">Hello</h1> -->
-    <iframe id="convo-frame" src="/chat/convo" title="Conversations" width="100%" height="100%"></iframe>
+    <!-- <iframe id="convo-frame" src="/chat/convo" title="Conversations" width="100%" height="100%"></iframe> -->
+    <h1 id="convo-header">Conversation</h1>
+    <div id="convo-div">
+      <div id="convo-table-div">
+        <table id="convo-table">
+          <tr>
+            <td style="text-align: left;">Chat</td>
+          </tr>
+          <tr>
+            <td style="text-align: right;">Another Chat</td>
+          </tr>
+          <tr>
+            <td>Another</td>
+          </tr>
+          <tr>
+            <td>Yet Another</td>
+          </tr>
+        </table>
+      </div>
+      <div id="send-chat-div">
+        <input id="field" type="text">
+        <button onclick="send()">Send</button>
+      </div>
+    </div>
   </div>
 </div>
 {{end}}
