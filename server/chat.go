@@ -15,23 +15,42 @@ import (
 	"golang.org/x/net/websocket"
 )
 
+// ConnMap holds a map of the connected users
 type ConnMap struct {
-	conns map[string]*websocket.Conn
+	connMap map[string]*websocket.Conn
 	sync.RWMutex
 }
 
+// Message holds information about messages
 type Message struct {
 	Sender string `json:"sender"`
-	to     []string
+	ConvoID uint64 `json:"convoid"`
 	Msg    string `json:"msg"`
+	TimeStamp int64 `json:"timestamp"`
 }
 
+// Conversation holds the messages and users in a conversation
+type Conversation struct {
+	ID uint64
+	Users []*User
+	Messages []Message
+	sync.RWMutex
+}
+
+type ConvoMap struct {
+	sync.RWMutex
+}
+
+// UsageTracker keeps track of the total time spent sending messages and
+// the number of messages sent
 type UsageTracker struct {
 	time int64 // Total time in milliseconds
 	num  int64 // Number of messages sent
 	sync.Mutex
 }
 
+// AddTime adds the input time to the total UsageTracker and
+// increments the number of messages
 func (ut *UsageTracker) AddTime(t int64) {
 	ut.Lock()
 	defer ut.Unlock()
@@ -39,6 +58,7 @@ func (ut *UsageTracker) AddTime(t int64) {
 	ut.num++
 }
 
+// Reset resets the usage tracker values to 0 and returns the values
 func (ut *UsageTracker) Reset() (t, n int64) {
 	ut.Lock()
 	defer ut.Unlock()
@@ -58,14 +78,15 @@ const (
 var (
 	chatLogger *log.Logger
 	hubList    SLList
-	conns      ConnMap
+	connMap      ConnMap
+	convoMap ConvoMAp
 	usage      UsageTracker // Tracks the number of messages send and time to send them
 )
 
 func init() {
 	chatLogger = log.New(os.Stdout, "Chat Server: ", log.LstdFlags)
 
-	conns.conns = make(map[string]*websocket.Conn)
+	connMap.conns = make(map[string]*websocket.Conn)
 
 	c := make(chan *Message, chanBuffer)
 	hubList.Append(c)
@@ -127,36 +148,36 @@ func sendMessage(msg *Message) {
 	}
 }
 
-// Adds a user to the map of conns
+// Adds a user to the map of connMap
 func addUser(username string, ws *websocket.Conn) {
 	// Do a full lock since the user will always be added,
 	// even if they are already logged in
-	conns.Lock()
-	defer conns.Unlock()
+	connMap.Lock()
+	defer connMap.Unlock()
 	// Check to see if the user is logged in elsewhere
 	// If so, let that socket know that they are being logged out
-	user := conns.conns[username]
+	user := connMap.conns[username]
 	if user != nil {
 		user.Write([]byte("Signed in elsewhere"))
 	}
-	conns.conns[username] = ws
+	connMap.conns[username] = ws
 }
 
-// Removes a user from the map of conns
+// Removes a user from the map of connMap
 func removeUser(username string, ws *websocket.Conn) {
 	// Use an RLock to check if the user to be removed is the same as the one
 	// in the map by comparing websockets
-	conns.RLock()
-	if conns.conns[username] == ws {
-		// If the conns are the same, do a full lock and check one more time
-		conns.Lock()
-		if conns.conns[username] == ws {
+	connMap.RLock()
+	if connMap.conns[username] == ws {
+		// If the connMap are the same, do a full lock and check one more time
+		connMap.Lock()
+		if connMap.conns[username] == ws {
 			// If they are still the same, delete the user from the map
-			delete(conns.conns, username)
+			delete(connMap.conns, username)
 		}
-		conns.Unlock()
+		connMap.Unlock()
 	}
-	conns.RUnlock()
+	connMap.RUnlock()
 }
 
 // Creates a new message
@@ -175,18 +196,18 @@ func startChatHub(hubChan chan *Message, num int) {
 	defer chatLogger.Printf("Hub %d stopped\n", num)
 	// Loop through the channel
 	for msg := range hubChan {
-		// Make sure the conns map is safe for reading
-		conns.RLock()
+		// Make sure the connMap map is safe for reading
+		connMap.RLock()
 		for _, user := range msg.to {
 			// Check to see if the user is connected
 			// If so, send the message
-			ws := conns.conns[user]
+			ws := connMap.conns[user]
 			if ws != nil {
 				websocket.JSON.Send(ws, *msg)
 			}
 			// Database message
 		}
-		conns.RUnlock()
+		connMap.RUnlock()
 	}
 }
 
