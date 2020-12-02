@@ -20,7 +20,9 @@ type User struct {
 	firstname string
 	lastname  string
 	email     string
-	password  string
+	password  string // Hashed password
+	convos []Conversation
+	friends []User
 }
 
 // UserMap holds key-value pairs for user emails and User structs
@@ -188,7 +190,16 @@ func (umap *UserMap) Register(fname, lname, email, password string) bool {
 	if user != nil {
 		return false
 	}
-	user = &User{fname, lname, email, password}
+	hashed, err := hashPassword(password)
+	if err != nil {
+		pageLogger.Println(err)
+		return false
+	}
+	user = &User{
+		firstname: fname,
+		lastname: lname,
+		email: email,
+		password: hashed}
 	umap.users[email] = user
 	return true
 }
@@ -201,5 +212,5 @@ func (umap *UserMap) Login(email, password string) bool {
 	if user == nil {
 		return false
 	}
-	return user.password == password
+	return checkPasswordHash(password, user.password)
 }
