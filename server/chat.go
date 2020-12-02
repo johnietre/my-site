@@ -52,7 +52,7 @@ const (
 	chanBuffer int           = 100  // The number of messages a hub can have buffered
 	mins       time.Duration = 1    // Number of minutes to wait before checking usage
 	upperBound float32       = 1000 // If the usage time is above this threshold, another hub is added; in ms
-	lowerBound float32       = 0    // If the usage time is below this threshold, a hub is removed; in ms
+	lowerBound float32       = 100    // If the usage time is below this threshold, a hub is removed; in ms
 )
 
 var (
@@ -64,10 +64,13 @@ var (
 
 func init() {
 	chatLogger = log.New(os.Stdout, "Chat Server: ", log.LstdFlags)
+
 	conns.conns = make(map[string]*websocket.Conn)
+
 	c := make(chan *Message, chanBuffer)
 	hubList.Append(c)
 	go startChatHub(c, hubList.Length())
+	go monitorUsage()
 }
 
 func check(err error) bool {
@@ -191,15 +194,24 @@ func monitorUsage() {
 	useChan := make(chan float32)
 	timer := time.AfterFunc(time.Minute*mins, func() {
 		ms, n := usage.Reset()
+<<<<<<< HEAD
 		if n > 0 {
 			useChan <- float32(ms) / float32(n)
 		} else {
 			useChan <- 0
 		}
+=======
+    if n > 0 {
+		  useChan <- float32(ms) / float32(n)
+    } else {
+      useChan <- 0
+    }
+>>>>>>> 57400ee8095253ca17f362f4866a4070c362bf27
 	})
 	for {
 		select {
 		case avg := <-useChan:
+      log.Printf("Average time/msg: %f ms\tNum hubs: %d\n", avg, hubList.Length())
 			if avg < lowerBound {
 				if hubList.Length() != 1 {
 					node := hubList.PopLast()

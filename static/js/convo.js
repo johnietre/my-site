@@ -14,7 +14,7 @@ ws.onopen = function() {
 
 ws.onerror = function(err) {
   console.log(err)
-  document.getElementById("header").innerHTML = "SHIT";
+  document.getElementById("header").innerHTML = "Oh no";
 };
 
 ws.onmessage = function(msg) {

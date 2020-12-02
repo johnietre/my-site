@@ -2,7 +2,19 @@ package main
 
 import (
 	"sync"
+
+	"golang.org/x/crypto/bcrypt"
 )
+
+func hashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return string(bytes), err
+}
+
+func checkPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
+}
 
 // SLLNode holds the data of a SLList
 type SLLNode struct {
@@ -123,7 +135,7 @@ func (ll *SLList) Remove(data interface{}) *SLLNode {
 	return node
 }
 
-// Pop removes the first item of the list
+// PopFirst removes the first item of the list
 func (ll *SLList) PopFirst() (node *SLLNode) {
 	ll.Lock()
 	defer ll.Unlock()
@@ -140,7 +152,7 @@ func (ll *SLList) PopFirst() (node *SLLNode) {
 	return
 }
 
-// Pop removes the first item of the list
+// PopLast removes the first item of the list
 func (ll *SLList) PopLast() (node *SLLNode) {
 	ll.Lock()
 	defer ll.Unlock()
