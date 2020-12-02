@@ -191,7 +191,11 @@ func monitorUsage() {
 	useChan := make(chan float32)
 	timer := time.AfterFunc(time.Minute*mins, func() {
 		ms, n := usage.Reset()
-		useChan <- float32(ms) / float32(n)
+		if n > 0 {
+			useChan <- float32(ms) / float32(n)
+		} else {
+			useChan <- 0
+		}
 	})
 	for {
 		select {
