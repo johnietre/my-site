@@ -1,4 +1,2 @@
-logs/*.txt
-logs/logs
-server/server
 .DSStore
+server
