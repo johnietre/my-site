@@ -1,8 +1,8 @@
-#include "includes/http_server.hpp"
+#include "net_http.hpp"
 #include <iostream>
 #include <string>
 using namespace std;
-using namespace Server;
+using namespace net_http;
 
 void handler(ResponseWriter w, Request &r) {
   w.WriteFile("index.html");
