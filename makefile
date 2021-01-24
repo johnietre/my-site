@@ -4,4 +4,4 @@ go:
 	go build server.go
 
 cpp:
-	g++ -o server -lpthread server.cpp -std=c++17
+	g++ server.cpp -o server -lpthread -std=c++17
