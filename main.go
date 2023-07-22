@@ -18,14 +18,14 @@ import (
 
 var (
 	logger = log.New(os.Stderr, "", log.LstdFlags|log.Lshortfile|log.LUTC)
-  remoteAddr string
+  remoteIP string
   indexPath = "./index.html"
   tmpVal atomic.Value
 )
 
 func main() {
 	addr := flag.String("addr", "127.0.0.1:8000", "Address to run on")
-  flag.StringVar(&remoteAddr, "remote-addr", "", "Remote address to check for to parse")
+  flag.StringVar(&remoteIP, "remote-ip", "", "Remote IP to check for to parse")
 	certPath := flag.String("cert", "", "Path to cert file")
 	keyPath := flag.String("key", "", "Path to key file")
 	logPath := flag.String("log", "", "Path to log file (empty routes to stderr")
@@ -125,7 +125,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 // Returns true if successful
 func parseTemplate(w http.ResponseWriter, r *http.Request) bool {
     host, _, err := net.SplitHostPort(r.RemoteAddr)
-    if err != nil || host != remoteAddr {
+    if err != nil || host != remoteIP {
       return false
     }
     tmp, err := template.ParseFiles(indexPath)
@@ -140,5 +140,6 @@ func parseTemplate(w http.ResponseWriter, r *http.Request) bool {
       return false
     }
     tmpVal.Store(tmp)
+    logger.Printf("parsed template")
     return true
 }

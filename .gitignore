@@ -1,5 +1,7 @@
 .DSStore
 server
 mysite
+*.crt
+*.key
 
 .DS_Store
