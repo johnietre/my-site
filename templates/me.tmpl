@@ -1,0 +1,117 @@
+{{define "style"}}
+<link rel="stylesheet" href="./static/css/me.css">
+{{end}}
+
+{{define "main"}}
+<h1 id="name-header">Johnie Tre Rodgers</h1>
+
+<div id="content">
+  <div>
+    <img id="me-img" src="./static/me.jpg" alt="It's Me">
+  </div>
+  <div id="info-div">
+    <h2>Who I Am</h2>
+      <div id="contact-info">
+        <span>
+          Email: <a href="mailto:johnietrebus@gmail.com">johnietrebus@gmail.com</a>
+        </span>
+        <span>
+          Phone: <a href="tel:972-679-3337">972-679-3337</a>
+        </span>
+      </div>
+      <br>
+      <div id="auto-bio-button-div">
+        <button id="auto-bio-button" onclick="switchTldr()">Show Full</button>
+      </div>
+      <div id="auto-bio-tldr-div">
+        <p id="auto-bio-tldr">
+        <br>
+        <b>Education</b>
+        <ul>
+          <li>The Colony High School (2019)</li>
+          <li>
+            Southern Methodist University (2023)
+            <ul>
+              <li>Major: Finance</li>
+              <li>Minors: Psychology, Statistics</li>
+            </ul>
+          </li>
+        </ul>
+        <b>Primary Programming Languages</b>
+        <ul>
+          <li>GoLang</li>
+          <li>Python</li>
+          <li>Rust</li>
+        </ul>
+        <b>Other Programming Languages</b>
+        <ul>
+          <li>C</li>
+          <li>C++</li>
+          <li>CSS</li>
+          <li>Haskell</li>
+          <li>HTML</li>
+          <li>Javascript</li>
+          <li>Typescript</li>
+        </ul>
+        </p>
+      </div>
+      <div id="auto-bio-div" hidden>
+        <div id="auto-bio">
+          <p>
+          My name is Johnie Rodgers III (Tre is my nickname).
+
+          I was born and raised in Dallas, specifically The Colony.
+
+          I graduated from The Colony High School in 2019
+          and Southern Methodist University (SMU) in 2023
+          where I majored Finance and Minored in Psychology and Statistics.
+          Even though I am not majoring in Computer Science, I try to learn
+          much of what is taught in the classroom as well as what is not.
+          </p>
+
+          <p>
+          I first took an interest in programming the summer after I graduated high
+          school and really got into it a few months later, starting with Swift.
+
+          After about a month, I took an extended break from Swift and took to
+          learning Python for a few months, then C, C++ and Go. Finally, after
+          years of trying out various languages and projects, I have found myself
+          favoring GoLang and Rust for the backend.
+
+          Some of the other languages I have dabbled in include Flutter, JavaScript,
+          HTML, CSS, Haskell, and Java.
+          </p>
+
+          <p>
+          Ultimately, my goal is to combine my studies at university
+          with computer science in order to create something magnificent,
+          specifically dealing with either financial assets and trading or
+          psychology whether it be an app, fintech company, or the likes.
+          </p>
+        </div>
+      </div>
+
+      <div id="my-works">
+        <h2><a href="https://github.com/johnietre">My Github</a></h2>
+      </div>
+  </div>
+
+</div>
+
+</div>
+<script>
+  const switchTldr = () => {
+    const button = event.target;
+    if (button.innerText == "Show TLDR") {
+      document.querySelector("#auto-bio-div").hidden = true;
+      document.querySelector("#auto-bio-tldr-div").hidden = false;
+      button.innerText = "Show Full";
+    } else {
+      document.querySelector("#auto-bio-tldr-div").hidden = true;
+      document.querySelector("#auto-bio-div").hidden = false;
+      button.innerText = "Show TLDR";
+    }
+  };
+</script>
+
+{{end}}

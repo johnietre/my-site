@@ -1,0 +1,18 @@
+{{define "style"}}
+<link rel="stylesheet" href="./static/css/home.css">
+{{end}}
+
+{{define "main"}}
+<h1>A look at me!</h1>
+
+<div id="repos-div">
+  <h3 style="text-align:center">Recent Repositories</h3>
+  <div id="repos">
+    {{range .Data}}
+    <div>
+      <a href="{{.HtmlUrl}}">{{.Name}}</a>
+    </div>
+    {{end}}
+  </div>
+</div>
+{{end}}

@@ -1,0 +1,63 @@
+#main {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  align-items: center;
+}
+
+#contact-info {
+  text-align: center;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
+#contact-info > span {
+  margin: 5px 20px;
+  text-align: center;
+}
+
+#auto-bio {
+  /*text-align: center;*/
+  width: 100%;
+  font-size: large;
+}
+
+#auto-bio > p {
+  margin: 0;
+  text-indent: 30px;
+}
+
+#content {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+}
+
+#content > * {
+  width: 40%;
+}
+
+#me-img {
+  max-width: 100%;
+  margin: auto;
+}
+
+#info-div > * {
+  width: 100%;
+}
+
+#auto-bio-button-div {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+#auto-bio-button {
+  background-color: inherit;
+  border: 1;
+  border-radius: 5px;
+  padding: 5px;
+  font-size: 1em;
+  font-weight: bold;
+}

@@ -1,0 +1,33 @@
+#main {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#repos-div {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#repos {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  width: 75%;
+}
+
+#repos > div {
+  margin: 5px;
+  padding: 10px;
+}
+
+#repos > div:not(:first-child) {
+  border-left: 1px solid black;
+}
+
+#repos > div > a {
+  font-size: 2em;
+}
