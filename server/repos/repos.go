@@ -1,13 +1,13 @@
 package repos
 
 import (
-  "encoding/json"
-  "fmt"
-  "log"
-  "net/http"
-  "time"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"time"
 
-  utils "github.com/johnietre/utils/go"
+	utils "github.com/johnietre/utils/go"
 )
 
 var (
@@ -27,7 +27,7 @@ func InitRepos() error {
 			}
 		}
 	}()
-  return nil
+	return nil
 }
 
 func RefreshRepos() error {
@@ -72,11 +72,11 @@ func RefreshRepos() error {
 }
 
 type ReposPageData struct {
-  Repos []RepoInfo
+	Repos []RepoInfo
 }
 
 func NewReposPageData() ReposPageData {
-  return ReposPageData{Repos: repos.Load()}
+	return ReposPageData{Repos: repos.Load()}
 }
 
 type RepoInfo struct {

@@ -18,10 +18,8 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-document.querySelector("#base-search-div > div[contenteditable]").addEventListener(
-  "keydown",
-  (ev) => { ev.stopPropagation() }
-);
+document.querySelector("#base-search-div > div[contenteditable]")
+    .addEventListener("keydown", (ev) => {ev.stopPropagation()});
 
 document.querySelector("#base-search-cancel").addEventListener("click", () => {
   document.querySelector("#base-search-div").hidden = true;
