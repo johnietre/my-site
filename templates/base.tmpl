@@ -5,8 +5,9 @@
 <head>
   <meta charset="UTF-8">
   <title>{{block "title" .}}3J{{end}}</title>
-  <link rel="stylesheet" href="./static/css/base.css">
   <link rel="icon" type="x-icon" href="./static/favicon.ico">
+  <link rel="stylesheet" href="./static/css/base.css">
+  <script type="module" src="./static/js/base.js" defer></script>
   {{block "script" .}}{{end}}
   {{block "style" .}}{{end}}
 </head>
@@ -15,14 +16,44 @@
   <div id="app">
 
     <ul id="nav-bar">
-      <li><a {{if eq .Active "home"}}class="nav-bar-active"{{end}} href="./home">Home</a>
-      <li><a {{if eq .Active "me"}}class="nav-bar-active"{{end}} href="./me">Me</a>
-      <li><a {{if eq .Active "blog"}}class="nav-bar-active"{{end}} href="./blog">Blog</a>
-      <li><a {{if eq .Active "journal"}}class="nav-bar-active"{{end}} href="./journal">Journal</a>
+      <li><a {{if eq .Active "home"}}class="nav-bar-active"{{end}} href="./home">Home</a></li>
+      <li><a {{if eq .Active "me"}}class="nav-bar-active"{{end}} href="./me">Me</a></li>
+      <li><a {{if eq .Active "blog"}}class="nav-bar-active"{{end}} href="./blog">Blog</a></li>
+      <li>
+        <a {{if eq .Active "journal"}}class="nav-bar-active"{{end}} href="./journal">Journal</a>
+      </li>
+      <li><a {{if eq .Active "apps"}}class="nav-bar-active"{{end}} href="./apps">Apps</a></li>
+      <li id="nav-search" style="height:100%">
+        <!--
+        <div>
+          <input
+            id="nav-search-input"
+            type="text"
+            placeholder="Search"
+          >
+        </div>
+        -->
+        <p
+          id="nav-search-input"
+          type="text"
+          placeholder="Search"
+        >
+        yes
+        </p>
+      </li>
     </ul>
 
     <div id="main">
     {{template "main" .}}
+    </div>
+    <div id="base-search-div" hidden>
+      <h3 style="text-align:left">Search</h3>
+      <div style="margin-bottom:2px">
+        <button id="base-search-cancel">Cancel</button>
+        <button>Search</button>
+      </div>
+      <!--<textarea rows="1" cols="80"></textarea>-->
+      <div id="base-search-entry" aria-placeholder="Search..." contenteditable></div>
     </div>
   </div>
 </body>

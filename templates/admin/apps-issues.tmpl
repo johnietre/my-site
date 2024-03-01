@@ -1,0 +1,128 @@
+{{with .Data}}
+
+<div id="apps-reviews">
+  <div id="apps-reviews-filters">
+    <button onclick="appsToggleFilters()">Sort/Filters</button>
+
+    <form
+      id="apps-reviews-filters-form"
+      hx-get="../admin/apps/issues" hx-target="app-reviews-list" hx-swap="innerHTML"
+      hidden
+    >
+    <div>
+      <h3>Sorting</h3>
+      <label for="sort-by">Sort:</label>
+      <select name="sort-by">
+        <option value="app">App</option>
+        <option value="reason">Reason</option>
+        <option value="timestamp" selected>Time</option>
+      </select>
+      <label>Descending</label><input type="checkbox" />
+    </div>
+
+    <div>
+      <h3>Filters</h3>
+      <div>
+        <label for="filter-app">App</label>
+        <select name="filter-app">
+          <!-- TODO -->
+        </select>
+      </div>
+
+      <div>
+        <label for="filter-reason">Reason</label>
+        <select name="filter-reason">
+          <!-- TODO -->
+        </select>
+      </div>
+
+      <div>
+        <label for="filter-replied-to">Replied To:</label>
+        <select name="filter-replied-to">
+          <option value="no" selected>No</option>
+          <option value="yes">Yes</option>
+          <option value="all">All</option>
+        </select>
+      </div>
+    </div>
+
+
+    <div>
+      <button onclick="appsCancelSortFilters()">Cancel</button>
+      <button type="submit">Apply</button>
+    </div>
+    </form>
+  </div>
+  
+  <div id="app-reviews-list">
+    <details>
+      <summary>App: {{.AppId}} | Reason: {{.Reason}}</summary>
+      <p>Time: {{.Timestamp}}</p>
+      <p>Email: {{.Email}}</p>
+      <p>Subject: {{.Subject}}</p>
+      <p>Description:<br />{{.Description}}</p>
+      {{if not .RepliedTo}}
+      <form hx-post="/apps/issues/reply/{{.Id}}">
+        <label>Reply:</label>
+        <textarea></textarea>
+        <button>Send</button>
+      </form>
+      {{end}}
+    </details>
+  </div>
+
+</div>
+
+<script>
+  const appsReviewsSortFilters = {
+    "sort-by": "time",
+    "sort-desc": false,
+    "filter-app": "",
+    "filter-reason": "",
+    "filter-replied-to": ""
+  };
+  //function appsApplySortFilters() {
+  document.querySelector("form").addEventListener("htmx:validateUrl", (ev) => {
+    const form = document.querySelector("apps-review-filters-form");
+    appsReviewsSortFilters["sort-by"] = form["sort-by"].value;
+    appsReviewsSortFilters["sort-desc"] = form["sort-desc"].checked;
+    appsReviewsSortFilters["filter-app"] = form["filter-app"].value;
+    appsReviewsSortFilters["filter-reason"] = form["filter-reason"].value;
+    appsReviewsSortFilters["filter-replied-to"] = form["filter-replied-to"].value;
+    const parts = [];
+    if (form["sort-by"].value !== "") {
+      parts.push(`sort-by=${form["sort-by"]}`);
+    }
+    if (form["sort-desc"].value !== "") {
+      parts.push(`sort-desc=${form["sort-desc"]}`);
+    }
+    if (form["filter-app"].value !== "") {
+      parts.push(`filter-app=${form["filter-app"]}`);
+    }
+    if (form["filter-reason"].value !== "") {
+      parts.push(`filter-reason=${form["filter-reason"]}`);
+    }
+    if (form["filter-replied-to"].value !== "") {
+      parts.push(`filter-replied-to=${form["filter-replied-to"]}`);
+    }
+    if (parts.length != 0) {
+      ev.url += `?${parts.join("&")}`;
+    }
+    form.hidden = true;
+  });
+  function appsCancelSortFilters() {
+    const form = document.querySelector("apps-review-filters-form");
+    form["sort-by"].value = appsReviewsSortFilters["sort-by"];
+    form["sort-desc"].checked = appsReviewsSortFilters["sort-desc"];
+    form["filter-app"].value = appsReviewsSortFilters["filter-app"];
+    form["filter-reason"].value = appsReviewsSortFilters["filter-reason"];
+    form["filter-replied-to"].value = appsReviewsSortFilters["filter-replied-to"];
+    form.hidden = true;
+  }
+  function appsToggleFilters() {
+    const form = document.querySelector("apps-reviews-filters-form");
+    form.hidden = !form.hidden;
+  }
+</script>
+
+{{end}}

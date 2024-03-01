@@ -1,0 +1,45 @@
+{{with .Data}}
+
+<form
+  id="apps-list-edit"
+  {{if eq .Id 0}}
+  hx-post="./apps/list/0"
+  {{else}}
+  hx-put="./apps/list/{{.Id}}"
+  {{end}}
+  hx-target="this" hx-swap="outerHTML"
+  >
+  <h1>{{.Name}} (App Id: {{.Id}})</h1>
+
+  <div>
+    <label for="name">Name:</label>
+    <input type="text" name="name" value="{{.Name}}" />
+  </div>
+
+  <div>
+    <label for="description">Description:</label><br />
+    <textarea name="description">{{.Description}}</textarea>
+  </div>
+
+  <div>
+    <label for="webpage">Webpage:</label>
+    <input type="text" name="webpage" value="{{.Webpage}}" />
+  </div>
+
+  <div>
+    <label for="on-app-store">On App Store:</label>
+    <input type="checkbox" name="on-app-store" {{if .OnAppStore}}checked{{end}} />
+  </div>
+
+  <div>
+    <label for="on-play-store">On Play Store:</label>
+    <input type="checkbox" name="on-play-store" {{if .OnPlayStore}}checked{{end}} />
+  </div>
+
+  <div>
+    <button onclick="document.querySelector('#apps-list-edit').innerText = ''"></button>
+    <button hx-get="./apps/list/0">Cancel</button>
+  </div>
+</form>
+
+{{end}}

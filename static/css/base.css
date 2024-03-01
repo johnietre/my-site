@@ -29,16 +29,34 @@ h2 {
   width: 90%;
 }
 
-#nav-bar > li {
+#nav-bar > li:not(:last-child) {
   float: left;
 }
 
+#nav-bar > li {
+  display: inline-block;
+}
+
 #nav-bar > li > a {
-  display: block;
+  display: inline-block;
   color: white;
   text-align: center;
   padding: 14px 16px;
   text-decoration: none;
+}
+
+#nav-search {
+  float: right;
+  height: 100%;
+}
+
+#nav-search-input {
+  display: inline-block;
+  /*
+  margin: auto 2px auto 2px;
+  */
+  border: none;
+  height: 100%;
 }
 
 #nav-bar > li > a:hover:not(.nav-bar-active) {
@@ -47,4 +65,45 @@ h2 {
 
 .nav-bar-active {
   background-color: #025252;
+}
+
+#base-search-div {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  -webkit-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+
+  border: 1px solid black;
+  border-radius: 5px;
+  background-color: white;
+}
+
+#base-search-entry {
+  resize: horizontal;
+  width: 40ch;
+  padding: 0px 5px;
+
+  border-top: 1px solid black;
+  overflow: auto;
+  outline: none;
+  -webkit-box-shadow: none;
+  -moz-box-shadow: none;
+}
+
+/* TODO: Make placeholder visible again when text becomes empty */
+
+#base-search-entry::before {
+  color: #999;
+  content: "Search...";
+  position: absolute;
+  pointer-events: none;
+}
+
+#base-search-entry:empty::before {
+  display: block;
+}
+
+#base-search-entry:not(:empty)::before {
+  display: none;
 }

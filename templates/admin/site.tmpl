@@ -1,0 +1,21 @@
+<div id="site-parse">
+  <h2>Parsing</h2>
+  <form hx-post="../admin/site/parse" hx-target="#site-parse-result">
+    {{with .Data}}
+    <label for="admin-parse-names-select">Page(s) to Parse</label>
+    <br />
+    <select id="site-parse-names-select" name="names" multiple>
+      {{range .TmplNames}}
+      <option value="{{.}}">{{.}}</option>
+      {{end}}
+    </select>
+    {{end}}
+    <input type="submit" value="Parse">
+  </form>
+
+  <div id="site-parse-result" style="margin:10px;">
+  </div>
+</div>
+
+<script type="module">
+</script>

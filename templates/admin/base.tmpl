@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+
+<html lang="en-US">
+
+<head>
+  <title>Admin</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="x-icon" href="../static/favicon.ico">
+  <link rel="stylesheet" href="../static/css/admin/base.css">
+  <script src="../static/js/htmx.min.js"></script>
+</head>
+
+<body>
+  <div id="app">
+    <ul id="base-nav-bar" class="nav-bar">
+      <li>
+        <a hx-get="./home" data-name="home" hx-target="#main">Home</a>
+      </li>
+      <li>
+        <a hx-get="./me" data-name="me" hx-target="#main">Me</a>
+      </li>
+      <li>
+        <a hx-get="./blog" data-name="blog" hx-target="#main">Blog</a>
+      </li>
+      <li>
+        <a hx-get="./journal" data-name="journal" hx-target="#main">Journal</a>
+      </li>
+      <li>
+        <a hx-get="./apps" data-name="apps" hx-target="#main">Apps</a>
+      </li>
+      <li>
+        <a class="nav-bar-active" hx-get="./site" data-name="site" hx-target="#main">Site</a>
+      </li>
+      <li>
+        <a id="base-nav-bar-logout" onclick="baseLogout()">Logout</a>
+      </li>
+    </ul>
+
+    <div id="main" hx-get="./site" hx-trigger="load">
+    </div>
+  </div>
+
+  <script>
+    for (const link of document.querySelectorAll("#base-nav-bar > li > a")) {
+      link.addEventListener("htmx:xhr:loadend", (ev) => {
+        setNavActive(ev.detail.elt.dataset.name);
+      });
+    }
+    function setNavActive(name) {
+      for (const link of document.querySelectorAll("#base-nav-bar > li > a")) {
+        if (link.dataset.name == name) {
+          link.classList.add("nav-bar-active");
+        } else {
+          link.classList.remove("nav-bar-active");
+        }
+      }
+    }
+    async function baseLogout() {
+      window.location.replace("./logout");
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,56 @@
+body {
+  color: black;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+h1 {
+  text-align: center;
+}
+
+h2 {
+  text-align: center;
+}
+
+#app, #main {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  align-items: center;
+}
+
+.nav-bar {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background-color: black;
+  width: 90%;
+}
+
+.nav-bar > li:not(:last-child) {
+  float: left;
+  cursor: pointer;
+}
+
+.nav-bar > li > a {
+  display: block;
+  color: white;
+  text-align: center;
+  padding: 14px 16px;
+  text-decoration: none;
+}
+
+.nav-bar > li > a:hover:not(.nav-bar-active) {
+  background-color: #08d4d4;
+}
+
+.nav-bar-active {
+  background-color: #025252;
+}
+
+#base-nav-bar-logout {
+  cursor: pointer;
+  float: right;
+}

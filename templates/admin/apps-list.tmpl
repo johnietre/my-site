@@ -1,0 +1,46 @@
+<button
+  hx-post="./apps/list/reload"
+  hx-target="#apps-list-result"
+  hx-swap="outerHTML"
+>
+  Reload Main Apps List
+</button>
+
+<p id="apps-list-result"></p>
+
+{{with .Data}}
+
+{{if .Apps}}
+<table id="apps-list-table">
+  <tr>
+    <th>ID</th>
+    <th>Name</th>
+    <th>Description</th>
+    <th>Webpage</th>
+    <th>App Store</th>
+    <th>Play Store</th>
+    <th></th>
+  </tr>
+  {{range .Apps}}
+  <tr>
+    <td>{{.Id}}</td>
+    <td>{{.Name}}</td>
+    <td>{{.Description}}</td>
+    <td>{{.Webpage}}</td>
+    <td>
+      {{if .OnAppStore}}&#x2705;{{else}}&#x274C;{{end}}
+    </td>
+    <td>
+      {{if .OnPlayStore}}&#x2705;{{else}}&#x274C;{{end}}
+    </td>
+    <td>
+      <button hx-get="./apps/list/{{.Id}}">Edit</button>
+    </td>
+  </tr>
+  {{end}}
+</table>
+{{end}}
+
+<form id="apps-list-edit"></form>
+
+{{end}}

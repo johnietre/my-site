@@ -1,7 +1,9 @@
 .DSStore
-server
-mysite
 *.crt
 *.key
+*.db
+*.log
+/bin
 
 .DS_Store
+admin-config.json

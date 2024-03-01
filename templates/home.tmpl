@@ -3,16 +3,19 @@
 {{end}}
 
 {{define "main"}}
+<h1>!!!NOTE - Site is still under construction!!!</h1>
 <h1>A look at me!</h1>
 
+{{with .Data}}
 <div id="repos-div">
   <h3 style="text-align:center">Recent Repositories</h3>
   <div id="repos">
-    {{range .Data}}
+    {{range .Repos}}
     <div>
       <a href="{{.HtmlUrl}}">{{.Name}}</a>
     </div>
     {{end}}
   </div>
 </div>
+{{end}}
 {{end}}

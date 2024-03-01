@@ -1,0 +1,28 @@
+{{with .Data}}
+
+<div>
+  <!-- TODO: Format -->
+  <p>Timestamp: {{.Issue.Timestamp}}</p>
+  <p>Name: {{.Name}}</p>
+  <p>Email: {{.Issue.Email}}</p>
+  <p>Reason: {{.Issue.Reason}}</p>
+
+  <p>Subject: {{.Issue.Subject}}</p>
+  <p>Description:</p>
+  <p>{{.Issue.Description}}</p>
+</div>
+
+<div>
+  <textarea></textarea>
+</div>
+<button onclick="appsReviewReplyCancel()">Cancel</button>
+<button>Reply</button>
+
+<script>
+  function appsReviewReplyCancel() {
+    const replyDiv = document.querySelector("#apps-review-reply");
+    replyDiv.innerHTML = "";
+  }
+</script>
+
+{{end}}

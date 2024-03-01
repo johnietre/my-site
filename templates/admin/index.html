@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+
+<html lang="en-US">
+
+<head>
+  <title>Index</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://unpkg.com/vue@3"></script>
+  <script src="https://unpkg.com/htmx.org@1.9.5"></script>
+<!--
+<style>
+body, #app, #main {
+  width: 100%;
+}
+
+#controls {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#main {
+  display: flex;
+  flex-direction: row;
+}
+#main > div {
+  width: 50%;
+}
+img {
+  max-height: 50px;
+  max-width: 50px;
+}
+#content {
+  border-right: 1px solid black;
+  overflow-y: scroll;
+  height: 90vh;
+}
+</style>
+-->
+<style>
+h1 {
+  text-align: center;
+}
+body, #app {
+  width: 100%;
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#controls {
+  width: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#editor, #preview {
+  border: 1px solid black;
+  overflow-y: scroll;
+  width: 90vw;
+  height: 90vh;
+}
+</style>
+</head>
+
+<body>
+  <!--
+  <div id="app">
+    <div id="controls">
+      <button onclick="changeOutput()"><img alt="Scenery" src="https://pics.craiyon.com/2023-06-20/7f9a15a54868484cb758093340ddb0e1.webp"></button>
+    </div>
+
+    <div id="main">
+      <div id="content" contenteditable></div>
+      <div id="output"></div>
+    </div>
+  </div>
+
+  <script>
+    function changeOutput() {
+      const contentDiv = document.querySelector("#content");
+      const outputDiv = document.querySelector("#output");
+      outputDiv.innerHTML = contentDiv.innerText;
+    }
+    document.querySelector("#content").oninput = (ev) => {
+      const contentDiv = ev.target;
+      const outputDiv = document.querySelector("#output");
+      outputDiv.innerHTML = contentDiv.innerText;
+    }
+  </script>
+  -->
+  <div id="app">
+    <div id="controls">
+      <button id="previewButton" onclick="showHidePreview()">Preview</button>
+    </div>
+
+    <div id="main">
+      <div id="editor" contenteditable></div>
+      <!--
+      <div id="preview" hidden></div>
+      -->
+      <iframe id="preview" hidden></iframe>
+    </div>
+  </div>
+
+  <script>
+    function showHidePreview() {
+      const button = document.querySelector("#previewButton");
+      const editorDiv = document.querySelector("#editor");
+      const previewDiv = document.querySelector("#preview");
+      if (editorDiv.hidden) {
+        editorDiv.hidden = false;
+        previewDiv.hidden = true;
+        button.innerText = "Preview";
+      } else {
+        //previewDiv.innerHTML = editorDiv.innerText;
+        previewDiv.contentWindow.document.open();
+        previewDiv.contentWindow.document.write("<!DOCTYPE html>");
+        previewDiv.contentWindow.document.write(editorDiv.innerText);
+        previewDiv.contentWindow.document.close();
+        editorDiv.hidden = true;
+        previewDiv.hidden = false;
+        button.innerText = "Edit";
+      }
+    }
+  </script>
+</body>
+
+</html>
