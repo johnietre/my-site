@@ -417,9 +417,10 @@ type AdminConfig struct {
 	Password string `json:"password"`
 	Cookie   struct {
 		Name   string `json:"name"`
-		Path   string `json:"path"`
-		Domain string `json:"domain"`
+		Path   string `json:"path,omitempty"`
+		Domain string `json:"domain,omitempty"`
 		MaxAge int64  `json:"maxAge"`
+		Secure bool   `json:"secure,omitempty"`
 	} `json:"cookie"`
 	Jwt struct {
 		Issuer     string `json:"issuer"`
@@ -499,7 +500,7 @@ func newAdminJwtCookie(value string) *http.Cookie {
 		Path:     adminConfig.Cookie.Path,
 		Domain:   adminConfig.Cookie.Domain,
 		Expires:  now.Add(time.Duration(adminConfig.Cookie.MaxAge) * time.Second),
-		Secure:   true,
+		Secure:   adminConfig.Cookie.Secure,
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
 	}

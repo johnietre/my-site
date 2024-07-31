@@ -22,7 +22,7 @@ import (
 )
 
 var (
-//baseDir = "./"
+// baseDir = "./"
 )
 
 func init() {
@@ -50,7 +50,7 @@ func main() {
 	certPath := flag.String("cert", "", "Path to cert file")
 	keyPath := flag.String("key", "", "Path to key file")
 
-	logPath := flag.String("log", "", "Path to log file (empty routes to stderr")
+	logPath := flag.String("log", "", "Path to log file (empty routes to stderr)")
 	appsDbPath := flag.String(
 		"apps-db", "$(base-dir)/apps/apps.db", "Path to apps database",
 	)

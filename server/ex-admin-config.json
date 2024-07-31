@@ -1,0 +1,16 @@
+{
+  "username": "test",
+  "password": "test",
+  "cookie": {
+    "name": "johnietre-admin",
+    "path": "/admin",
+    "domain": "127.0.0.1",
+    "maxAge": 86400,
+    "secure": false
+  },
+  "jwt": {
+    "issuer": "http://127.0.0.1:8000",
+    "timeout": 86400,
+    "signingKey": "testkey"
+  }
+}
