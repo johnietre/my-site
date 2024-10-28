@@ -1,0 +1,28 @@
+{{define "navbar"}}
+<ul id="nav-bar">
+  <li><a {{if eq .Active "home"}}class="nav-bar-active"{{end}} href="./home">Home</a></li>
+  <li><a {{if eq .Active "me"}}class="nav-bar-active"{{end}} href="./me">Me</a></li>
+  <li><a {{if eq .Active "blog"}}class="nav-bar-active"{{end}} href="./blog">Blog</a></li>
+  <li>
+    <a {{if eq .Active "journal"}}class="nav-bar-active"{{end}} href="./journal">Journal</a>
+  </li>
+  <li><a {{if eq .Active "apps"}}class="nav-bar-active"{{end}} href="./apps">Apps</a></li>
+  <li id="nav-search" style="height:100%">
+    <!--
+    <div>
+      <input
+        id="nav-search-input"
+        type="text"
+        placeholder="Search"
+      >
+    </div>
+    -->
+    <p
+      id="nav-search-input"
+      type="text"
+      placeholder="Search"
+    >
+    </p>
+  </li>
+</ul>
+{{end}}

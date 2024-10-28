@@ -29,7 +29,19 @@ func init() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile | log.LUTC)
 }
 
+func makeRunCmd() *cobra.Command {
+  cmd := &cobra.Command{
+    Use: "run",
+  }
+  flags := cmd.Flags()
+  return cmd
+}
+
 func main() {
+  rootCmd := &cobra.Command{
+    Use: "my-site",
+  }
+
 	baseDir := flag.String(
 		"base-dir", ".",
 		"Path to base directory where all other directories are located",

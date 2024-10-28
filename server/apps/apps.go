@@ -3,6 +3,9 @@ package apps
 import (
 	"database/sql"
 	"errors"
+	"log"
+	"os"
+	"path/filepath"
 
 	utils "github.com/johnietre/utils/go"
 	_ "github.com/mattn/go-sqlite3"
@@ -29,6 +32,17 @@ func InitApps(dbPath string) error {
 
 func openAppsDB(dbPath string) (err error) {
 	appsDb, err = sql.Open("sqlite3", dbPath)
+
+	scriptPath := filepath.Join(filepath.Dir(dbPath), "apps.sql")
+	if bytes, err := os.ReadFile(scriptPath); err != nil {
+		if os.IsNotExist(err) {
+			log.Printf("apps DB script (%s) not found", scriptPath)
+		} else {
+			log.Printf("error reading apps DB script (%s): %v", scriptPath, err)
+		}
+	} else if _, err := appsDb.Exec(string(bytes)); err != nil {
+		log.Printf("error executing apps DB script (%s): %v", scriptPath, err)
+	}
 	return
 }
 

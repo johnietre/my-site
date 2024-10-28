@@ -1,4 +1,4 @@
-CREATE TABLE apps (
+CREATE TABLE IF NOT EXISTS apps (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   name TEXT NOT NULL,
   description TEXT NOT NULL,
@@ -7,7 +7,7 @@ CREATE TABLE apps (
   on_play_store BOOLEAN NOT NULL
 );
 
-create TABLE issues (
+create TABLE IF NOT EXISTS issues (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   app_id INTEGER,
   email TEXT NOT NULL,

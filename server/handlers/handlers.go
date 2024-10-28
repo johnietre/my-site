@@ -22,6 +22,7 @@ import (
 var (
 	tmplsDir, remoteIP string
 	baseTmplPath       string
+	navbarTmplPath     string
 
 	adminUsername, adminPassword string
 
@@ -44,6 +45,7 @@ func InitHandlers(tmplsDirPath, remIP string, aConfig AdminConfig) error {
 	tmplsDir, remoteIP = tmplsDirPath, remIP
 	adminConfig = aConfig
 	baseTmplPath = filepath.Join(tmplsDir, "base.tmpl")
+	navbarTmplPath = filepath.Join(tmplsDir, "navbar.tmpl")
 
 	for _, name := range tmplNames {
 		if err := loadTmpl(name); err != nil {
@@ -91,6 +93,14 @@ func defaultHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func homeHandler(w http.ResponseWriter, r *http.Request) {
+	path := r.URL.Path
+	if path != "" && path[0] == '/' {
+		path = path[1:]
+	}
+	if path != "" && path != "home" {
+		http.NotFound(w, r)
+		return
+	}
 	data := PageData{Active: "home", Data: repos.NewReposPageData()}
 	execTmpl("home", w, data)
 }

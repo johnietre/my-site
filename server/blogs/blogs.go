@@ -2,6 +2,9 @@ package blogs
 
 import (
 	"database/sql"
+	"log"
+	"os"
+	"path/filepath"
 
 	//utils "github.com/johnietre/utils/go"
 	_ "github.com/mattn/go-sqlite3"
@@ -21,6 +24,17 @@ func InitBlogs(blogsDir, dbPath string) error {
 
 func openBlogsDB(dbPath string) (err error) {
 	blogsDb, err = sql.Open("sqlite3", dbPath)
+
+	scriptPath := filepath.Join(filepath.Dir(dbPath), "blogs.sql")
+	if bytes, err := os.ReadFile(scriptPath); err != nil {
+		if os.IsNotExist(err) {
+			log.Printf("blogs DB script (%s) not found", scriptPath)
+		} else {
+			log.Printf("error reading blogs DB script (%s): %v", scriptPath, err)
+		}
+	} else if _, err := blogsDb.Exec(string(bytes)); err != nil {
+		log.Printf("error executing blogs DB script (%s): %v", scriptPath, err)
+	}
 	return
 }
 
