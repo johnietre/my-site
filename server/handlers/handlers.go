@@ -13,6 +13,7 @@ import (
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
+	jmux "github.com/johnietre/go-jmux"
 	"github.com/johnietre/my-site/server/apps"
 	"github.com/johnietre/my-site/server/blogs"
 	"github.com/johnietre/my-site/server/repos"
@@ -57,42 +58,75 @@ func InitHandlers(tmplsDirPath, remIP string, aConfig AdminConfig) error {
 
 func CreateRouter(staticDir string) http.Handler {
 	// Populate the routes
-	router := http.NewServeMux()
+	router := jmux.NewRouter()
+	//router := http.NewServeMux()
 
 	static := http.FileServer(http.Dir(staticDir))
-	router.Handle("/static/", http.StripPrefix("/static", static))
+	router.Get("/static/", jmux.WrapH(http.StripPrefix("/static", static)))
 
 	for _, name := range tmplNames {
 		if err := loadTmpl(name); err != nil {
 			log.Fatal(err)
 		}
 	}
-	router.HandleFunc("/", homeHandler)
-	router.HandleFunc("/home", homeHandler)
-	router.HandleFunc("/me", meHandler)
-	router.HandleFunc("/blog", blogHandler)
-	router.HandleFunc("/journal", journalHandler)
-	router.HandleFunc("/apps", appsHandler)
 
-	router.Handle(
-		"/admin/",
-		http.StripPrefix(
-			"/admin",
-			http.Handler(adminAuthMiddleware(http.HandlerFunc(adminHandler))),
-		),
-	)
+	homeRouter := createHomeRouter()
+	router.All("/", homeRouter)
+	router.All("/home", homeRouter)
+
+	router.All("/me", createMeRouter())
+	router.All("/blog", createBlogRouter())
+	router.All("/journal", createJournalRouter())
+	router.All("/apps", createAppsRouter())
+
+	router.All("/admin/", createAdminRouter())
 
 	return router
 }
 
-func defaultHandler(w http.ResponseWriter, r *http.Request) {
+func createHomeRouter() jmux.Handler {
+	router := jmux.NewRouter()
+	router.GetFunc("/", homeHandler)
+	router.GetFunc("/home", homeHandler)
+	return router
+}
+
+func createMeRouter() jmux.Handler {
+	router := jmux.NewRouter()
+	router.GetFunc("/", meHandler)
+	return jmux.WrapH(http.StripPrefix("/me", router))
+}
+
+func createBlogRouter() jmux.Handler {
+	router := jmux.NewRouter()
+	router.GetFunc("/", blogHandler)
+	return router
+}
+
+func createJournalRouter() jmux.Handler {
+	router := jmux.NewRouter()
+	router.GetFunc("/", journalHandler)
+	router.GetFunc("/{journal_id}", getJournalHandler)
+	return jmux.WrapH(http.StripPrefix("/journal", router))
+}
+
+func createAppsRouter() jmux.Handler {
+	router := jmux.NewRouter()
+	router.GetFunc("/", appsHandler)
+	router.PostFunc("/issues", appsNewIssueHandler)
+	return jmux.WrapH(http.StripPrefix("/app", router))
+}
+
+func defaultHandler(c *jmux.Context) {
+	w, r := c.Writer, c.Request
 	if r.URL.Path == "" || r.URL.Path == "/" {
 		http.Redirect(w, r, "", http.StatusFound)
 		return
 	}
 }
 
-func homeHandler(w http.ResponseWriter, r *http.Request) {
+func homeHandler(c *jmux.Context) {
+	w, r := c.Writer, c.Request
 	path := r.URL.Path
 	if path != "" && path[0] == '/' {
 		path = path[1:]
@@ -102,29 +136,30 @@ func homeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	data := PageData{Active: "home", Data: repos.NewReposPageData()}
-	execTmpl("home", w, data)
+	execTmpl("home", c, data)
 }
 
-func meHandler(w http.ResponseWriter, r *http.Request) {
+func meHandler(c *jmux.Context) {
 	data := PageData{Active: "me"}
-	execTmpl("me", w, data)
+	execTmpl("me", c, data)
 }
 
-func blogHandler(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query()
+func blogHandler(c *jmux.Context) {
+	query := c.Query()
 	if id := query.Get("id"); id != "" {
 		return
 	}
 	data := PageData{Active: "blog", Data: blogs.NewBlogsPageData()}
-	execTmpl("blog", w, data)
+	execTmpl("blog", c, data)
 }
 
-func appsHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		data := PageData{Active: "apps", Data: apps.NewAppsPageData()}
-		execTmpl("apps", w, data)
-		return
-	}
+func appsHandler(c *jmux.Context) {
+	data := PageData{Active: "apps", Data: apps.NewAppsPageData()}
+	execTmpl("apps", c, data)
+}
+
+func appsNewIssueHandler(c *jmux.Context) {
+	w, r := c.Writer, c.Request
 	if err := r.ParseForm(); err != nil {
 		// TODO: Error and response codes
 		http.Error(w, "Bad request", http.StatusBadRequest)
@@ -162,12 +197,54 @@ func appsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`<p>Success</p>`))
 }
 
-func journalHandler(w http.ResponseWriter, r *http.Request) {
+func journalHandler(c *jmux.Context) {
 	data := PageData{Active: "journal"}
-	execTmpl("journal", w, data)
+	execTmpl("journal", c, data)
 }
 
-func adminHandler(w http.ResponseWriter, r *http.Request) {
+func getJournalHandler(c *jmux.Context) {
+	data := PageData{Active: "journal"}
+	execTmpl("journal", c, data)
+}
+
+func createAdminRouter() jmux.Handler {
+	router := jmux.NewRouter()
+	/*
+	  router.All(
+	    "/",
+			jmux.WrapH(http.StripPrefix(
+				"/admin",
+				jmux.ToHTTP(jmux.Handler(
+	        adminAuthMiddleware(jmux.HandlerFunc(adminHandler)),
+	      )),
+			)),
+	  )
+	*/
+	//return router
+
+	router.GetFunc("/home", adminHomeHandler)
+	router.GetFunc("/me", adminMeHandler)
+	router.GetFunc("/blog", adminBlogHandler)
+	router.GetFunc("/journal", adminJournalHandler)
+
+	router.GetFunc("/apps", adminAppsHandler)
+	router.GetFunc("/apps/issues", adminAppsIssuesHandler)
+	router.GetFunc("/apps/list", adminAppsListHandler)
+	router.PostFunc("/apps/list/0", adminAppsListNewHandler)
+	router.GetFunc("/apps/list/reload", adminAppsListReloadHandler)
+	router.GetFunc("/apps/list/{app_id}", adminAppsListHandler)
+
+	router.GetFunc("/site", adminSiteHandler)
+	router.GetFunc("/site/parse", adminSiteParseHandler)
+
+	return jmux.WrapH(http.StripPrefix(
+		"/admin",
+		jmux.ToHTTP(adminAuthMiddleware(router)),
+	))
+}
+
+func adminHandler(c *jmux.Context) {
+	w, r := c.Writer, c.Request
 	// TODO: Login
 	path := r.URL.Path
 	if path != "" && path[0] == '/' {
@@ -185,20 +262,20 @@ func adminHandler(w http.ResponseWriter, r *http.Request) {
 		     log.Printf("error executing admin/base template: %v", err)
 		   }
 		*/
-		execTmpl("admin/base", w, PageData{})
+		execTmpl("admin/base", c, PageData{})
 		return
 	case "home":
-		handleAdminHome(w, r, parts[1:])
+		//handleAdminHome(c, parts[1:])
 	case "me":
-		handleAdminMe(w, r, parts[1:])
+		//handleAdminMe(c, parts[1:])
 	case "blog":
-		handleAdminBlog(w, r, parts[1:])
+		//handleAdminBlog(c, parts[1:])
 	case "journal":
-		handleAdminJournal(w, r, parts[1:])
+		//handleAdminJournal(c, parts[1:])
 	case "apps":
-		handleAdminApps(w, r, parts[1:])
+		handleAdminApps(c, parts[1:])
 	case "site":
-		handleAdminSite(w, r, parts[1:])
+		handleAdminSite(c, parts[1:])
 	default:
 		http.Error(w, "Not found", http.StatusNotFound)
 	}
@@ -212,38 +289,27 @@ func adminHandler(w http.ResponseWriter, r *http.Request) {
 	*/
 }
 
-func handleAdminHome(w http.ResponseWriter, r *http.Request, parts []string) {
-	execTmpl("admin/home", w, PageData{})
+func adminHomeHandler(c *jmux.Context) {
+	execTmpl("admin/home", c, PageData{})
 }
 
-func handleAdminMe(w http.ResponseWriter, r *http.Request, parts []string) {
-	execTmpl("admin/me", w, PageData{})
+func adminMeHandler(c *jmux.Context) {
+	execTmpl("admin/me", c, PageData{})
 }
 
-func handleAdminBlog(w http.ResponseWriter, r *http.Request, parts []string) {
-	execTmpl("admin/blog", w, PageData{})
+func adminBlogHandler(c *jmux.Context) {
+	execTmpl("admin/blog", c, PageData{})
 }
 
-func handleAdminJournal(w http.ResponseWriter, r *http.Request, parts []string) {
-	execTmpl("admin/journal", w, PageData{})
+func adminJournalHandler(c *jmux.Context) {
+	execTmpl("admin/journal", c, PageData{})
 }
 
-func handleAdminApps(w http.ResponseWriter, r *http.Request, parts []string) {
-	if len(parts) == 0 {
-		execTmpl("admin/apps", w, PageData{})
-		return
-	}
-	switch parts[0] {
-	case "issues":
-		handleAdminAppsIssues(w, r, parts[1:])
-		return
-	case "list":
-		handleAdminAppsList(w, r, parts[1:])
-		return
-	}
+func adminAppsHandler(c *jmux.Context) {
+	execTmpl("admin/apps", c, PageData{})
 }
 
-func handleAdminAppsIssues(w http.ResponseWriter, r *http.Request, parts []string) {
+func adminAppsIssuesHandler(c *jmux.Context) {
 	// TODO
 	/*
 	  partsLen := len(parts)
@@ -276,7 +342,8 @@ func handleAdminAppsIssues(w http.ResponseWriter, r *http.Request, parts []strin
 	*/
 }
 
-func handleAdminAppsList(w http.ResponseWriter, r *http.Request, parts []string) {
+func adminAppsListHandler(c *jmux.Context) {
+	w, r := c.Writer, c.Request
 	partsLen := len(parts)
 	if partsLen == 0 {
 		data, err := apps.NewAALPageData()
@@ -284,7 +351,7 @@ func handleAdminAppsList(w http.ResponseWriter, r *http.Request, parts []string)
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			log.Printf("error getting admin/apps/list page data: %v", err)
 		} else {
-			execTmpl("admin/apps-list", w, PageData{Data: data})
+			execTmpl("admin/apps-list", c, PageData{Data: data})
 		}
 		return
 	}
@@ -294,7 +361,7 @@ func handleAdminAppsList(w http.ResponseWriter, r *http.Request, parts []string)
 	}
 	switch parts[0] {
 	case "0":
-		handleAdminAppsListNew(w, r)
+		handleAdminAppsListNew(c)
 		return
 	case "reload":
 		if r.Method != http.MethodPost {
@@ -311,10 +378,11 @@ func handleAdminAppsList(w http.ResponseWriter, r *http.Request, parts []string)
 		http.Error(w, "Not found", http.StatusNotFound)
 		return
 	}
-	handleAdminAppsListEdit(w, r, id)
+	handleAdminAppsListEdit(c, id)
 }
 
-func handleAdminAppsListEdit(w http.ResponseWriter, r *http.Request, id uint64) {
+func adminAppsListEditHandler(c *jmux.Context, id uint64) {
+	w, r := c.Writer, c.Request
 	// TODO
 	data, err := apps.NewAALEPageData(id)
 	if r.Method == http.MethodPut {
@@ -335,10 +403,11 @@ func handleAdminAppsListEdit(w http.ResponseWriter, r *http.Request, id uint64) 
 			return
 		}
 	}
-	execTmpl("admin/apps-list-edit", w, PageData{Data: data})
+	execTmpl("admin/apps-list-edit", c, PageData{Data: data})
 }
 
-func handleAdminAppsListNew(w http.ResponseWriter, r *http.Request) {
+func adminAppsListNewHandler(c *jmux.Context) {
+	w, r := c.Writer, c.Request
 	data, _ := apps.NewAALEPageData(0)
 	if r.Method == http.MethodPost {
 		onAppStore, err := strconv.ParseBool(r.PostFormValue("on-app-store"))
@@ -369,30 +438,24 @@ func handleAdminAppsListNew(w http.ResponseWriter, r *http.Request) {
 		}
 		data.App = app
 	}
-	execTmpl("admin/apps-list-edit", w, PageData{Data: data})
+	execTmpl("admin/apps-list-edit", c, PageData{Data: data})
 }
 
 type AdminSiteData struct {
 	TmplNames []string
 }
 
-func handleAdminSite(w http.ResponseWriter, r *http.Request, parts []string) {
-	if len(parts) == 0 {
-		data := PageData{
-			Data: AdminSiteData{
-				TmplNames: tmplNames,
-			},
-		}
-		execTmpl("admin/site", w, data)
-		return
+func adminSiteHandler(c *jmux.Context) {
+	data := PageData{
+		Data: AdminSiteData{
+			TmplNames: tmplNames,
+		},
 	}
-	if parts[0] == "parse" {
-		handleAdminSiteParse(w, r)
-		return
-	}
+	execTmpl("admin/site", c, data)
 }
 
-func handleAdminSiteParse(w http.ResponseWriter, r *http.Request) {
+func adminSiteParseHandler(c *jmux.Context) {
+	w, r := c.Writer, c.Request
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
@@ -448,46 +511,47 @@ type AdminJWTClaims struct {
 	jwt.RegisteredClaims
 }
 
-func adminAuthMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		path := r.URL.Path
+func adminAuthMiddleware(next jmux.Handler) jmux.Handler {
+	return jmux.HandlerFunc(func(c *jmux.Context) {
+		path := c.Path()
 		if path != "" && path[0] == '/' {
 			path = path[1:]
 		}
 		if path == "login" {
-			adminLoginHandler(w, r)
+			adminLoginHandler(c)
 			return
 		}
-		cookie, _ := r.Cookie(adminConfig.Cookie.Name)
+		cookie, _ := c.Cookie(adminConfig.Cookie.Name)
 		if path != "logout" {
 			if validateAdminJwtCookie(cookie) {
-				next.ServeHTTP(w, r)
+				next.ServeC(c)
 				return
 			}
-			w.WriteHeader(http.StatusUnauthorized)
+			c.WriteHeader(http.StatusUnauthorized)
 		}
 		cookie = newAdminJwtCookie("")
 		cookie.Expires, cookie.MaxAge = time.Time{}, -1
-		http.SetCookie(w, cookie)
+		c.SetCookie(cookie)
 		if path == "" || path == "/" {
-			execTmpl("admin/login", w, PageData{})
+			execTmpl("admin/login", c, PageData{})
 			return
 		} else if path == "logout" {
-			w.Header().Set("Location", "../admin")
-			w.WriteHeader(http.StatusFound)
+			c.Writer.Header().Set("Location", "../admin")
+			c.WriteHeader(http.StatusFound)
 			return
 		}
-		w.Write([]byte("Unauthorized"))
+		c.Write([]byte("Unauthorized"))
 	})
 }
 
-func adminLoginHandler(w http.ResponseWriter, r *http.Request) {
+func adminLoginHandler(c *jmux.Context) {
+	w, r := c.Writer, c.Request
 	r.ParseForm()
 	username := r.PostFormValue("username")
 	password := r.PostFormValue("password")
 	if username != adminConfig.Username || password != adminConfig.Password {
 		w.WriteHeader(http.StatusUnauthorized)
-		execTmpl("admin/login", w, PageData{})
+		execTmpl("admin/login", c, PageData{})
 		return
 	}
 	tokStr, err := newAdminJwt(username)
@@ -497,7 +561,7 @@ func adminLoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.SetCookie(w, newAdminJwtCookie(tokStr))
-	//execTmpl("admin/base", w, PageData{})
+	//execTmpl("admin/base", c, PageData{})
 	w.Header().Set("Location", "../admin")
 	w.WriteHeader(http.StatusFound)
 }
@@ -560,7 +624,8 @@ func validateAdminJwt(tokStr string) bool {
 }
 
 // Returns true if successful
-func parseTemplate(w http.ResponseWriter, r *http.Request) bool {
+func parseTemplate(c *jmux.Context) bool {
+	w, r := c.Writer, c.Request
 	// TODO: Return Error?
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
 	if err != nil || host != remoteIP {
@@ -580,11 +645,11 @@ func parseTemplate(w http.ResponseWriter, r *http.Request) bool {
 	return true
 }
 
-func execTmpl(name string, w http.ResponseWriter, data PageData) {
+func execTmpl(name string, c *jmux.Context, data PageData) {
 	if tmpl, loaded := tmpls.Load(name); !loaded {
 		log.Printf("missing %s template", name)
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
-	} else if err := tmpl.Execute(w, data); err != nil {
+		c.InternalServerError("Internal server error")
+	} else if err := tmpl.Execute(c.Writer, data); err != nil {
 		log.Printf("error executing %s template: %v", name, err)
 		// NOTE: This could result in probable double-write
 		//http.Error(w, "Internal Server Error", http.StatusInternalServerError)

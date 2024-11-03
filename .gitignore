@@ -1,9 +1,11 @@
 .DSStore
-*.crt
-*.key
 *.db
 *.log
 /bin
+
+*.crt
+*.csr
+*.key
 
 .DS_Store
 admin-config.json

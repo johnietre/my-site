@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	repos = utils.NewAValue[[]RepoInfo]([]RepoInfo{})
+	repos = utils.NewAValue([]RepoInfo{})
 )
 
 func InitRepos() error {
