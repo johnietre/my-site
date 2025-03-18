@@ -62,7 +62,10 @@ func CreateRouter(staticDir string) http.Handler {
 	//router := http.NewServeMux()
 
 	static := http.FileServer(http.Dir(staticDir))
-	router.Get("/static/", jmux.WrapH(http.StripPrefix("/static", static)))
+	router.Get(
+    "/static/",
+    jmux.WrapH(http.StripPrefix("/static", static)),
+  ).MatchAny(jmux.MethodsGet())
 
 	for _, name := range tmplNames {
 		if err := loadTmpl(name); err != nil {
@@ -100,7 +103,7 @@ func createMeRouter() jmux.Handler {
 func createBlogRouter() jmux.Handler {
 	router := jmux.NewRouter()
 	router.GetFunc("/", blogHandler)
-	return router
+	return jmux.WrapH(http.StripPrefix("/blog", router))
 }
 
 func createJournalRouter() jmux.Handler {
@@ -114,7 +117,7 @@ func createAppsRouter() jmux.Handler {
 	router := jmux.NewRouter()
 	router.GetFunc("/", appsHandler)
 	router.PostFunc("/issues", appsNewIssueHandler)
-	return jmux.WrapH(http.StripPrefix("/app", router))
+	return jmux.WrapH(http.StripPrefix("/apps", router))
 }
 
 func defaultHandler(c *jmux.Context) {
@@ -145,10 +148,12 @@ func meHandler(c *jmux.Context) {
 }
 
 func blogHandler(c *jmux.Context) {
+  /*
 	query := c.Query()
 	if id := query.Get("id"); id != "" {
 		return
 	}
+  */
 	data := PageData{Active: "blog", Data: blogs.NewBlogsPageData()}
 	execTmpl("blog", c, data)
 }
@@ -231,7 +236,7 @@ func createAdminRouter() jmux.Handler {
 	router.GetFunc("/apps/issues", adminAppsIssuesHandler)
 	router.GetFunc("/apps/list", adminAppsListHandler)
 	router.PostFunc("/apps/list/0", adminAppsListNewHandler)
-	router.GetFunc("/apps/list/reload", adminAppsListReloadHandler)
+	//router.GetFunc("/apps/list/reload", adminAppsListReloadHandler)
 	router.GetFunc("/apps/list/{app_id}", adminAppsListHandler)
 
 	router.GetFunc("/site", adminSiteHandler)
@@ -273,9 +278,9 @@ func adminHandler(c *jmux.Context) {
 	case "journal":
 		//handleAdminJournal(c, parts[1:])
 	case "apps":
-		handleAdminApps(c, parts[1:])
+		//handleAdminApps(c, parts[1:])
 	case "site":
-		handleAdminSite(c, parts[1:])
+		//handleAdminSite(c, parts[1:])
 	default:
 		http.Error(w, "Not found", http.StatusNotFound)
 	}
@@ -343,6 +348,7 @@ func adminAppsIssuesHandler(c *jmux.Context) {
 }
 
 func adminAppsListHandler(c *jmux.Context) {
+  /*
 	w, r := c.Writer, c.Request
 	partsLen := len(parts)
 	if partsLen == 0 {
@@ -379,6 +385,7 @@ func adminAppsListHandler(c *jmux.Context) {
 		return
 	}
 	handleAdminAppsListEdit(c, id)
+  */
 }
 
 func adminAppsListEditHandler(c *jmux.Context, id uint64) {

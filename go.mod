@@ -3,7 +3,7 @@ module github.com/johnietre/my-site
 go 1.19
 
 require (
-	github.com/johnietre/utils/go v0.0.0-20240712084910-4fb386379ba6
+	github.com/johnietre/utils/go v0.0.0-20241230231417-8a8624a29721
 	github.com/mattn/go-sqlite3 v1.14.22
 )
 

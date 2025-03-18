@@ -12,6 +12,9 @@ import (
 
 var (
 	repos = utils.NewAValue([]RepoInfo{})
+  // 2 minutes since requests are made while unauthenticated, which has a limit
+  // of 60/hr
+  repoRefresh = time.Minute * 2
 )
 
 func InitRepos() error {
@@ -21,7 +24,8 @@ func InitRepos() error {
 	}
 	go func() {
 		for {
-			time.Sleep(2 * time.Minute)
+      // TODO: Save time of last request as well as results?
+			time.Sleep(repoRefresh)
 			if err := RefreshRepos(); err != nil {
 				log.Println(err)
 			}
@@ -82,4 +86,5 @@ func NewReposPageData() ReposPageData {
 type RepoInfo struct {
 	Name    string `json:"name"`
 	HtmlUrl string `json:"html_url"`
+  PushedAt time.Time `json:"pushed_at"`
 }

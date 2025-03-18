@@ -4,7 +4,8 @@ CREATE TABLE IF NOT EXISTS apps (
   description TEXT NOT NULL,
   webpage TEXT NOT NULL,
   on_app_store BOOLEAN NOT NULL,
-  on_play_store BOOLEAN NOT NULL
+  on_play_store BOOLEAN NOT NULL,
+  hidden BOOLEAN NOT NULL
 );
 
 create TABLE IF NOT EXISTS issues (

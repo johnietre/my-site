@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-  "sync"
 
 	//utils "github.com/johnietre/utils/go"
 	_ "github.com/mattn/go-sqlite3"
@@ -14,7 +13,6 @@ import (
 var (
 	//BlogsData = utils.NewAValue[BlogData](BlogData{})
 	blogsDb *sql.DB
-  blogsDbMtx sync.RWMutex
 )
 
 func InitBlogs(blogsDir, dbPath string) error {
@@ -93,4 +91,15 @@ func NewBlogsPageData() BlogsPageData {
 			{Id: 3, Title: "Maybe"},
 		},
 	}
+}
+
+type Blog struct {
+	Id        uint64 `json:"id"`
+	Title     string `json:"title"`
+	Timestamp int64  `json:"timestamp"`
+	TzOffset  int    `json:"tzOffset"`
+}
+
+type BlogIndex struct {
+	Categories []string
 }
