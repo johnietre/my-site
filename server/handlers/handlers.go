@@ -17,6 +17,8 @@ import (
 	"github.com/johnietre/my-site/server/apps"
 	"github.com/johnietre/my-site/server/blogs"
 	"github.com/johnietre/my-site/server/repos"
+  "github.com/johnietre/my-site/server/gory-proxy"
+  //goryproxy "github.com/johnietre/gory-proxy/server"
 	utils "github.com/johnietre/utils/go"
 )
 
@@ -40,6 +42,8 @@ var (
 		"admin/site",
 	}
 	tmpls = utils.NewSyncMap[string, *template.Template]()
+
+  proxy = goryproxy.NewRouterHandler()
 )
 
 func InitHandlers(tmplsDirPath, remIP string, aConfig AdminConfig) error {
@@ -82,7 +86,9 @@ func CreateRouter(staticDir string) http.Handler {
 	router.All("/journal", createJournalRouter())
 	router.All("/apps", createAppsRouter())
 
-	router.All("/admin/", createAdminRouter())
+	//router.All("/admin/", createAdminRouter())
+
+  router.All("/api/", createApiRouter()).MatchAny(jmux.MethodsAll())
 
 	return router
 }
@@ -153,8 +159,12 @@ func blogHandler(c *jmux.Context) {
 	if id := query.Get("id"); id != "" {
 		return
 	}
-  */
 	data := PageData{Active: "blog", Data: blogs.NewBlogsPageData()}
+  */
+  data := PageData{Active: "blog"}
+  if false {
+    data = PageData{Active: "blog", Data: blogs.NewBlogsPageData()}
+  }
 	execTmpl("blog", c, data)
 }
 
@@ -210,6 +220,32 @@ func journalHandler(c *jmux.Context) {
 func getJournalHandler(c *jmux.Context) {
 	data := PageData{Active: "journal"}
 	execTmpl("journal", c, data)
+}
+
+// TODO
+func createApiRouter() jmux.Handler {
+  router := jmux.NewRouter()
+  router.All("/", jmux.WrapH(proxy)).MatchAny(jmux.MethodsAll())
+  /*
+  router.AllFunc("/", func(c *jmux.Context) {
+    log.Print(c.Path())
+    proxy.ServeHTTP(c.Writer, c.Request)
+  }).MatchAny(jmux.MethodsAll())
+  */
+  srvr := &goryproxy.Server{
+    Name: "jtgames",
+    Path: "jtgames",
+    Addr: "http://127.0.0.1:8888",
+    Hidden: true,
+  }
+  if err := srvr.AddNewProxy("http://127.0.0.1:8888"); err != nil {
+    panic(err)
+  }
+  if err := proxy.AddServer(srvr); err != nil {
+    panic(err)
+  }
+  return jmux.WrapH(http.StripPrefix("/api", proxy))
+  //return router
 }
 
 func createAdminRouter() jmux.Handler {
