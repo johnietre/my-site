@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-  "sync"
+	"sync"
 
 	//utils "github.com/johnietre/utils/go"
 	_ "github.com/mattn/go-sqlite3"
@@ -13,8 +13,8 @@ import (
 
 var (
 	//BlogsData = utils.NewAValue[BlogData](BlogData{})
-	blogsDb *sql.DB
-  blogsDbMtx sync.RWMutex
+	blogsDb    *sql.DB
+	blogsDbMtx sync.RWMutex
 )
 
 func InitBlogs(blogsDir, dbPath string) error {

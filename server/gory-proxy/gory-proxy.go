@@ -114,9 +114,9 @@ func (router *Router) ServeHTTP(w RW, r Req) {
 			return
 		}
 	}
-  router.routes.Range(func(addr string, _ *Server) bool {
-    return true
-  })
+	router.routes.Range(func(addr string, _ *Server) bool {
+		return true
+	})
 	if server, ok := router.routes.Load(baseSlug); ok {
 		// TODO: Set "Forwarded" header
 		if r.URL.Path[0] == '/' {
@@ -497,7 +497,7 @@ func (s *Server) Clone() *Server {
 		Path:     s.Path,
 		Addr:     s.Addr,
 		Hidden:   s.Hidden,
-    proxy: s.proxy,
+		proxy:    s.proxy,
 		isTunnel: s.isTunnel,
 	}
 }

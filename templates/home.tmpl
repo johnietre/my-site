@@ -3,19 +3,41 @@
 {{end}}
 
 {{define "main"}}
-<h1>!!!NOTE - Site is still under construction!!!</h1>
+<h1>!!!NOTE - Site still under construction!!!</h1>
 <h1>A look at me!</h1>
 
 {{with .Data}}
-<div id="repos-div">
-  <h3 style="text-align:center">Recent Repositories</h3>
-  <div id="repos">
-    {{range .Repos}}
-    <div>
-      <a href="{{.HtmlUrl}}">{{.Name}}</a>
+<div id="repos-repos-div">
+  <h2 style="text-align:center;margin-bottom: 0">Recent Repositories</h2>
+  {{if .Repos}}
+    <hr style="width:100px;color:aqua"/>
+    <div id="repos-repos">
+      {{range .Repos}}
+      <div class="repos-repo">
+        <h3>
+          <a style="color:aqua" class="repos-repo-title" href="{{.HtmlUrl}}">
+            {{.Name}}
+          </a>
+        </h3>
+        <!--
+        <div class="spacer"></div>
+        -->
+        <div>
+          <h4>Description</h4>
+          <p class="repos-repo-description">
+          {{if .Description}}
+            {{.Description}}
+          {{else}}
+            No description available.
+          {{end}}
+          </p>
+        </div>
+      </div>
+      {{end}}
     </div>
-    {{end}}
-  </div>
+  {{else}}
+    <div>No repos to show, I guess :/</div>
+  {{end}}
 </div>
 {{end}}
 {{end}}

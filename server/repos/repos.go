@@ -12,25 +12,27 @@ import (
 
 var (
 	repos = utils.NewAValue([]RepoInfo{})
-  // 2 minutes since requests are made while unauthenticated, which has a limit
-  // of 60/hr
-  repoRefresh = time.Minute * 2
+	// 2 minutes since requests are made while unauthenticated, which has a limit
+	// of 60/hr
+	repoRefresh = time.Minute * 2
 )
 
-func InitRepos() error {
+func InitRepos(refresh bool) error {
 	// Load the GitHub repos
 	if err := RefreshRepos(); err != nil {
 		return err
 	}
-	go func() {
-		for {
-      // TODO: Save time of last request as well as results?
-			time.Sleep(repoRefresh)
-			if err := RefreshRepos(); err != nil {
-				log.Println(err)
+	if refresh {
+		go func() {
+			for {
+				// TODO: Save time of last request as well as results?
+				time.Sleep(repoRefresh)
+				if err := RefreshRepos(); err != nil {
+					log.Println(err)
+				}
 			}
-		}
-	}()
+		}()
+	}
 	return nil
 }
 
@@ -84,7 +86,8 @@ func NewReposPageData() ReposPageData {
 }
 
 type RepoInfo struct {
-	Name    string `json:"name"`
-	HtmlUrl string `json:"html_url"`
-  PushedAt time.Time `json:"pushed_at"`
+	Name        string    `json:"name"`
+	Description string    `json:"description,omitempty"`
+	HtmlUrl     string    `json:"html_url"`
+	PushedAt    time.Time `json:"pushed_at,omitempty"`
 }

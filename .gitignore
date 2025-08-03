@@ -2,6 +2,7 @@
 *.db
 *.log
 /bin
+/ignored
 
 *.crt
 *.csr

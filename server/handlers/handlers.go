@@ -7,18 +7,21 @@ import (
 	"log"
 	"net"
 	"net/http"
+	"os"
 	"path/filepath"
-	"strconv"
+	"sort"
 	"strings"
 	"time"
 
 	jwt "github.com/golang-jwt/jwt/v5"
 	jmux "github.com/johnietre/go-jmux"
-	"github.com/johnietre/my-site/server/apps"
 	"github.com/johnietre/my-site/server/blogs"
+	"github.com/johnietre/my-site/server/gory-proxy"
+	"github.com/johnietre/my-site/server/products"
 	"github.com/johnietre/my-site/server/repos"
-  "github.com/johnietre/my-site/server/gory-proxy"
-  //goryproxy "github.com/johnietre/gory-proxy/server"
+	"github.com/johnietre/my-site/server/sitemap"
+
+	//goryproxy "github.com/johnietre/gory-proxy/server"
 	utils "github.com/johnietre/utils/go"
 )
 
@@ -30,20 +33,24 @@ var (
 	adminUsername, adminPassword string
 
 	tmplNames = []string{
-		"home", "me", "blog", "journal", "apps",
+		"home", "about", "blog", "journal", "products",
 		"admin/login", "admin/base",
+		"admin/admin",
 		"admin/home",
-		"admin/me",
+		"admin/about",
 		"admin/blog",
 		"admin/journal",
-		"admin/apps",
-		"admin/apps-issues", "admin/apps-issues-reply",
-		"admin/apps-list", "admin/apps-list-edit",
+		"admin/products",
+		"admin/products-issues", "admin/products-issues-reply",
+		"admin/products-list", "admin/products-list-edit",
 		"admin/site",
 	}
 	tmpls = utils.NewSyncMap[string, *template.Template]()
 
-  proxy = goryproxy.NewRouterHandler()
+	// TODO: replace with something that runs daily
+	smUrlEntryCreators = utils.NewSyncMap[string, func(sitemap.UrlEntry) sitemap.UrlEntry]()
+
+	proxy = goryproxy.NewRouterHandler()
 )
 
 func InitHandlers(tmplsDirPath, remIP string, aConfig AdminConfig) error {
@@ -67,9 +74,9 @@ func CreateRouter(staticDir string) http.Handler {
 
 	static := http.FileServer(http.Dir(staticDir))
 	router.Get(
-    "/static/",
-    jmux.WrapH(http.StripPrefix("/static", static)),
-  ).MatchAny(jmux.MethodsGet())
+		"/static/",
+		jmux.WrapH(http.StripPrefix("/static", static)),
+	).MatchAny(jmux.MethodsGet())
 
 	for _, name := range tmplNames {
 		if err := loadTmpl(name); err != nil {
@@ -81,19 +88,31 @@ func CreateRouter(staticDir string) http.Handler {
 	router.All("/", homeRouter)
 	router.All("/home", homeRouter)
 
-	router.All("/me", createMeRouter())
+	router.All("/about", createMeRouter())
 	router.All("/blog", createBlogRouter())
 	router.All("/journal", createJournalRouter())
-	router.All("/apps", createAppsRouter())
+	router.All("/products", createProductsRouter()).MatchAny(jmux.MethodsAll())
 
-	//router.All("/admin/", createAdminRouter())
+	router.All("/admin/", createAdminRouter()).MatchAny(jmux.MethodsAll())
+	router.GetFunc("/parse", func(c *jmux.Context) {
+		if parseTemplate(c) {
+			http.Redirect(c.Writer, c.Request, "/", http.StatusFound)
+			return
+		}
+	})
 
-  router.All("/api/", createApiRouter()).MatchAny(jmux.MethodsAll())
+	router.GetFunc("/robots.txt", func(c *jmux.Context) {
+		c.WriteFile(filepath.Join(staticDir, "robots.txt"))
+	})
+	router.All("/sitemap/", createSitemapRouter()).MatchAny(jmux.MethodsAll())
+
+	router.All("/api/", createApiRouter()).MatchAny(jmux.MethodsAll())
 
 	return router
 }
 
 func createHomeRouter() jmux.Handler {
+	storeSMEntryCreator("home", 0.7)
 	router := jmux.NewRouter()
 	router.GetFunc("/", homeHandler)
 	router.GetFunc("/home", homeHandler)
@@ -101,29 +120,58 @@ func createHomeRouter() jmux.Handler {
 }
 
 func createMeRouter() jmux.Handler {
+	storeSMEntryCreator("about", 0.5)
 	router := jmux.NewRouter()
 	router.GetFunc("/", meHandler)
-	return jmux.WrapH(http.StripPrefix("/me", router))
+	return jmux.WrapH(http.StripPrefix("/about", router))
 }
 
 func createBlogRouter() jmux.Handler {
+	storeSMEntryCreator("blog", 0.5)
 	router := jmux.NewRouter()
 	router.GetFunc("/", blogHandler)
 	return jmux.WrapH(http.StripPrefix("/blog", router))
 }
 
 func createJournalRouter() jmux.Handler {
+	storeSMEntryCreator("journal", 0.4)
 	router := jmux.NewRouter()
 	router.GetFunc("/", journalHandler)
 	router.GetFunc("/{journal_id}", getJournalHandler)
 	return jmux.WrapH(http.StripPrefix("/journal", router))
 }
 
-func createAppsRouter() jmux.Handler {
+func createProductsRouter() jmux.Handler {
+	storeSMEntryCreator("products", 0.8)
 	router := jmux.NewRouter()
-	router.GetFunc("/", appsHandler)
-	router.PostFunc("/issues", appsNewIssueHandler)
-	return jmux.WrapH(http.StripPrefix("/apps", router))
+	router.GetFunc("/", productsHandler)
+	router.Post(
+		"/issues",
+		jmux.WrapH(
+			http.MaxBytesHandler(
+				jmux.HandlerFunc(productsNewIssueHandler),
+				1<<12,
+			),
+		),
+	)
+	return jmux.WrapH(http.StripPrefix("/products", router))
+}
+
+func createSitemapRouter() jmux.Handler {
+	router := jmux.NewRouter()
+	router.AllFunc("/sitemap.xml", func(c *jmux.Context) {
+		sm := sitemap.Sitemap{}
+		smUrlEntryCreators.Range(func(name string, f SMEntryCreator) bool {
+			sm.Urls = append(sm.Urls, f(sitemap.UrlEntry{}))
+			return true
+		})
+		sort.Slice(sm.Urls, func(i, j int) bool {
+			return sm.Urls[i].Loc < sm.Urls[j].Loc
+		})
+		c.RespHeader().Set("Content-Type", "application/xml")
+		sitemap.NewEncoder(c.Writer).EncodeWithHeader(sm)
+	})
+	return jmux.WrapH(http.StripPrefix("/sitemap", router))
 }
 
 func defaultHandler(c *jmux.Context) {
@@ -149,31 +197,31 @@ func homeHandler(c *jmux.Context) {
 }
 
 func meHandler(c *jmux.Context) {
-	data := PageData{Active: "me"}
-	execTmpl("me", c, data)
+	data := PageData{Active: "about"}
+	execTmpl("about", c, data)
 }
 
 func blogHandler(c *jmux.Context) {
-  /*
-	query := c.Query()
-	if id := query.Get("id"); id != "" {
-		return
+	/*
+		query := c.Query()
+		if id := query.Get("id"); id != "" {
+			return
+		}
+		data := PageData{Active: "blog", Data: blogs.NewBlogsPageData()}
+	*/
+	data := PageData{Active: "blog"}
+	if false {
+		data = PageData{Active: "blog", Data: blogs.NewBlogsPageData()}
 	}
-	data := PageData{Active: "blog", Data: blogs.NewBlogsPageData()}
-  */
-  data := PageData{Active: "blog"}
-  if false {
-    data = PageData{Active: "blog", Data: blogs.NewBlogsPageData()}
-  }
 	execTmpl("blog", c, data)
 }
 
-func appsHandler(c *jmux.Context) {
-	data := PageData{Active: "apps", Data: apps.NewAppsPageData()}
-	execTmpl("apps", c, data)
+func productsHandler(c *jmux.Context) {
+	data := PageData{Active: "products", Data: products.NewProductsPageData()}
+	execTmpl("products", c, data)
 }
 
-func appsNewIssueHandler(c *jmux.Context) {
+func productsNewIssueHandler(c *jmux.Context) {
 	w, r := c.Writer, c.Request
 	if err := r.ParseForm(); err != nil {
 		// TODO: Error and response codes
@@ -181,18 +229,18 @@ func appsNewIssueHandler(c *jmux.Context) {
 		return
 	}
 	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
-	issue := apps.AppIssue{
+	issue := products.ProductIssue{
 		Email:       r.PostFormValue("email"),
 		Reason:      r.PostFormValue("reason"),
 		Subject:     r.PostFormValue("subject"),
 		Description: r.PostFormValue("description"),
 		Ip:          ip,
-		Timestamp:   time.Now().Unix(),
+		CreatedAt:   time.Now().Unix(),
 	}
-	_, err := apps.AddAppIssue(r.PostFormValue("app"), issue)
+	_, err := products.AddProductIssue(r.PostFormValue("product"), issue)
 	if err != nil {
 		msg, status := "", 0
-		if apps.IsAAIError(err) {
+		if products.IsAAIError(err) {
 			msg, status = err.Error(), http.StatusBadRequest
 		} else {
 			log.Printf("error adding app issue: %v", err)
@@ -202,7 +250,7 @@ func appsNewIssueHandler(c *jmux.Context) {
 		http.Error(
 			w,
 			fmt.Sprintf(
-				`<p class="apps-error-resp" style="color:red">Error: %s</p>`,
+				`<p class="products-review-error-resp">Error: %s</p>`,
 				msg,
 			),
 			status,
@@ -224,56 +272,58 @@ func getJournalHandler(c *jmux.Context) {
 
 // TODO
 func createApiRouter() jmux.Handler {
-  router := jmux.NewRouter()
-  router.All("/", jmux.WrapH(proxy)).MatchAny(jmux.MethodsAll())
-  /*
-  router.AllFunc("/", func(c *jmux.Context) {
-    log.Print(c.Path())
-    proxy.ServeHTTP(c.Writer, c.Request)
-  }).MatchAny(jmux.MethodsAll())
-  */
-  srvr := &goryproxy.Server{
-    Name: "jtgames",
-    Path: "jtgames",
-    Addr: "http://127.0.0.1:8888",
-    Hidden: true,
-  }
-  if err := srvr.AddNewProxy("http://127.0.0.1:8888"); err != nil {
-    panic(err)
-  }
-  if err := proxy.AddServer(srvr); err != nil {
-    panic(err)
-  }
-  return jmux.WrapH(http.StripPrefix("/api", proxy))
-  //return router
+	router := jmux.NewRouter()
+	router.All("/", jmux.WrapH(proxy)).MatchAny(jmux.MethodsAll())
+	/*
+	  router.AllFunc("/", func(c *jmux.Context) {
+	    log.Print(c.Path())
+	    proxy.ServeHTTP(c.Writer, c.Request)
+	  }).MatchAny(jmux.MethodsAll())
+	*/
+	srvr := &goryproxy.Server{
+		Name:   "jtgames",
+		Path:   "jtgames",
+		Addr:   "http://127.0.0.1:8888",
+		Hidden: true,
+	}
+	if err := srvr.AddNewProxy("http://127.0.0.1:8888"); err != nil {
+		panic(err)
+	}
+	if err := proxy.AddServer(srvr); err != nil {
+		panic(err)
+	}
+	return jmux.WrapH(http.StripPrefix("/api", proxy))
+	//return router
 }
 
 func createAdminRouter() jmux.Handler {
 	router := jmux.NewRouter()
 	/*
-	  router.All(
-	    "/",
-			jmux.WrapH(http.StripPrefix(
-				"/admin",
-				jmux.ToHTTP(jmux.Handler(
-	        adminAuthMiddleware(jmux.HandlerFunc(adminHandler)),
-	      )),
-			)),
-	  )
+		  router.All(
+		    "/",
+				jmux.WrapH(http.StripPrefix(
+					"/admin",
+					jmux.ToHTTP(jmux.Handler(
+		        adminAuthMiddleware(jmux.HandlerFunc(adminHandler)),
+		      )),
+				)),
+		  )
 	*/
 	//return router
 
+	router.GetFunc("/", adminHandler)
 	router.GetFunc("/home", adminHomeHandler)
-	router.GetFunc("/me", adminMeHandler)
+	router.GetFunc("/about", adminMeHandler)
 	router.GetFunc("/blog", adminBlogHandler)
 	router.GetFunc("/journal", adminJournalHandler)
 
-	router.GetFunc("/apps", adminAppsHandler)
-	router.GetFunc("/apps/issues", adminAppsIssuesHandler)
-	router.GetFunc("/apps/list", adminAppsListHandler)
-	router.PostFunc("/apps/list/0", adminAppsListNewHandler)
-	//router.GetFunc("/apps/list/reload", adminAppsListReloadHandler)
-	router.GetFunc("/apps/list/{app_id}", adminAppsListHandler)
+	// TODO: rename to products
+	router.GetFunc("/products", adminProductsHandler)
+	router.GetFunc("/products/issues", adminProductsIssuesHandler)
+	router.GetFunc("/products/list", adminProductsListHandler)
+	router.PostFunc("/products/list/0", adminProductsListNewHandler)
+	//router.GetFunc("/products/list/reload", adminProductsListReloadHandler)
+	router.GetFunc("/products/list/{product_id}", adminProductsListHandler)
 
 	router.GetFunc("/site", adminSiteHandler)
 	router.GetFunc("/site/parse", adminSiteParseHandler)
@@ -285,6 +335,10 @@ func createAdminRouter() jmux.Handler {
 }
 
 func adminHandler(c *jmux.Context) {
+	execTmpl("admin/admin", c, PageData{})
+}
+
+func _adminHandler(c *jmux.Context) {
 	w, r := c.Writer, c.Request
 	// TODO: Login
 	path := r.URL.Path
@@ -307,14 +361,14 @@ func adminHandler(c *jmux.Context) {
 		return
 	case "home":
 		//handleAdminHome(c, parts[1:])
-	case "me":
+	case "about":
 		//handleAdminMe(c, parts[1:])
 	case "blog":
 		//handleAdminBlog(c, parts[1:])
 	case "journal":
 		//handleAdminJournal(c, parts[1:])
-	case "apps":
-		//handleAdminApps(c, parts[1:])
+	case "products":
+		//handleAdminProducts(c, parts[1:])
 	case "site":
 		//handleAdminSite(c, parts[1:])
 	default:
@@ -335,7 +389,7 @@ func adminHomeHandler(c *jmux.Context) {
 }
 
 func adminMeHandler(c *jmux.Context) {
-	execTmpl("admin/me", c, PageData{})
+	execTmpl("admin/about", c, PageData{})
 }
 
 func adminBlogHandler(c *jmux.Context) {
@@ -346,22 +400,22 @@ func adminJournalHandler(c *jmux.Context) {
 	execTmpl("admin/journal", c, PageData{})
 }
 
-func adminAppsHandler(c *jmux.Context) {
-	execTmpl("admin/apps", c, PageData{})
+func adminProductsHandler(c *jmux.Context) {
+	execTmpl("admin/products", c, PageData{})
 }
 
-func adminAppsIssuesHandler(c *jmux.Context) {
+func adminProductsIssuesHandler(c *jmux.Context) {
 	// TODO
 	/*
 	  partsLen := len(parts)
 	  if partsLen == 0 {
 	    query := r.URL.Query()
-	    giq := apps.GetIssuesQuery{}
+	    giq := products.GetIssuesQuery{}
 	    if val := query.Get("app"); val != "" {
 	    }
 	    if val := query.Get("sort-desc"); val != "" {
 	    }
-	    apps.GetIssues(giq)
+	    products.GetIssues(giq)
 	    return
 	  }
 	  r.ParseForm()
@@ -383,57 +437,57 @@ func adminAppsIssuesHandler(c *jmux.Context) {
 	*/
 }
 
-func adminAppsListHandler(c *jmux.Context) {
-  /*
-	w, r := c.Writer, c.Request
-	partsLen := len(parts)
-	if partsLen == 0 {
-		data, err := apps.NewAALPageData()
+func adminProductsListHandler(c *jmux.Context) {
+	/*
+		w, r := c.Writer, c.Request
+		partsLen := len(parts)
+		if partsLen == 0 {
+			data, err := products.NewAALPageData()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				log.Printf("error getting admin/products/list page data: %v", err)
+			} else {
+				execTmpl("admin/products-list", c, PageData{Data: data})
+			}
+			return
+		}
+		if partsLen != 1 {
+			http.Error(w, "Not found", http.StatusNotFound)
+			return
+		}
+		switch parts[0] {
+		case "0":
+			handleAdminProductsListNew(c)
+			return
+		case "reload":
+			if r.Method != http.MethodPost {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			} else if err := products.LoadProductData(); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			} else {
+				w.Write([]byte("Success"))
+			}
+			return
+		}
+		id, err := strconv.ParseUint(parts[0], 10, 64)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			log.Printf("error getting admin/apps/list page data: %v", err)
-		} else {
-			execTmpl("admin/apps-list", c, PageData{Data: data})
+			http.Error(w, "Not found", http.StatusNotFound)
+			return
 		}
-		return
-	}
-	if partsLen != 1 {
-		http.Error(w, "Not found", http.StatusNotFound)
-		return
-	}
-	switch parts[0] {
-	case "0":
-		handleAdminAppsListNew(c)
-		return
-	case "reload":
-		if r.Method != http.MethodPost {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		} else if err := apps.LoadAppData(); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-		} else {
-			w.Write([]byte("Success"))
-		}
-		return
-	}
-	id, err := strconv.ParseUint(parts[0], 10, 64)
-	if err != nil {
-		http.Error(w, "Not found", http.StatusNotFound)
-		return
-	}
-	handleAdminAppsListEdit(c, id)
-  */
+		handleAdminProductsListEdit(c, id)
+	*/
 }
 
-func adminAppsListEditHandler(c *jmux.Context, id uint64) {
+func adminProductsListEditHandler(c *jmux.Context, id uint64) {
 	w, r := c.Writer, c.Request
 	// TODO
-	data, err := apps.NewAALEPageData(id)
+	data, err := products.NewAALEPageData(id)
 	if r.Method == http.MethodPut {
 		//
 		return
 	} else {
 		if err != nil {
-			if err == apps.ErrNotFound {
+			if err == products.ErrNotFound {
 				http.Error(
 					w,
 					fmt.Sprintf("app with ID %d not found", id),
@@ -446,42 +500,32 @@ func adminAppsListEditHandler(c *jmux.Context, id uint64) {
 			return
 		}
 	}
-	execTmpl("admin/apps-list-edit", c, PageData{Data: data})
+	execTmpl("admin/products-list-edit", c, PageData{Data: data})
 }
 
-func adminAppsListNewHandler(c *jmux.Context) {
+func adminProductsListNewHandler(c *jmux.Context) {
 	w, r := c.Writer, c.Request
-	data, _ := apps.NewAALEPageData(0)
+	data, _ := products.NewAALEPageData(0)
 	if r.Method == http.MethodPost {
-		onAppStore, err := strconv.ParseBool(r.PostFormValue("on-app-store"))
-		if err != nil {
-			http.Error(w, "invalid on-app-store value", http.StatusBadRequest)
-			return
-		}
-		onPlayStore, err := strconv.ParseBool(r.PostFormValue("on-play-store"))
-		if err != nil {
-			http.Error(w, "invalid on-play-store value", http.StatusBadRequest)
-			return
-		}
-		app := apps.App{
-			Name:        r.PostFormValue("name"),
-			Description: r.PostFormValue("description"),
-			Webpage:     r.PostFormValue("webpage"),
-			OnAppStore:  onAppStore,
-			OnPlayStore: onPlayStore,
+		app := products.Product{
+			Name:          r.PostFormValue("name"),
+			Description:   r.PostFormValue("description"),
+			Webpage:       r.PostFormValue("webpage"),
+			AppStoreLink:  r.PostFormValue("app-store-link"),
+			PlayStoreLink: r.PostFormValue("play-store-link"),
 		}
 		if app.Name == "" {
 			http.Error(w, "missing app name", http.StatusBadRequest)
 			return
 		}
-		app, err = apps.AddApp(app)
+		app, err := products.AddProduct(app)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		data.App = app
+		data.Product = app
 	}
-	execTmpl("admin/apps-list-edit", c, PageData{Data: data})
+	execTmpl("admin/products-list-edit", c, PageData{Data: data})
 }
 
 type AdminSiteData struct {
@@ -566,7 +610,7 @@ func adminAuthMiddleware(next jmux.Handler) jmux.Handler {
 		}
 		cookie, _ := c.Cookie(adminConfig.Cookie.Name)
 		if path != "logout" {
-			if validateAdminJwtCookie(cookie) {
+			if validateAdminJwtCookie(cookie) || true {
 				next.ServeC(c)
 				return
 			}
@@ -671,7 +715,8 @@ func parseTemplate(c *jmux.Context) bool {
 	w, r := c.Writer, c.Request
 	// TODO: Return Error?
 	host, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil || host != remoteIP {
+	// TODO: delete false
+	if err != nil || (false && host != remoteIP) {
 		// TODO
 		w.WriteHeader(http.StatusUnauthorized)
 		w.Write([]byte(`<p style="color:red">Unauthorized</p>`))
@@ -699,15 +744,17 @@ func execTmpl(name string, c *jmux.Context, data PageData) {
 	}
 }
 
+func getTmplPath(tmplName string) string {
+	return filepath.Join(tmplsDir, tmplName+".tmpl")
+}
+
 func loadTmpl(tmplName string) error {
 	var tmpl *template.Template
 	var err error
 	if strings.HasPrefix(tmplName, "admin/") {
-		tmpl, err = template.ParseFiles(filepath.Join(tmplsDir, tmplName+".tmpl"))
+		tmpl, err = template.ParseFiles(getTmplPath(tmplName))
 	} else {
-		tmpl, err = template.ParseFiles(
-			baseTmplPath, filepath.Join(tmplsDir, tmplName+".tmpl"),
-		)
+		tmpl, err = template.ParseFiles(baseTmplPath, getTmplPath(tmplName))
 	}
 	if err != nil {
 		return fmt.Errorf("error parsing %s tmpl file: %v", tmplName, err)
@@ -724,3 +771,23 @@ type PageData struct {
 	Active string
 	Data   any
 }
+
+func storeSMEntryCreator(name string, priority float32) {
+	smUrlEntryCreators.Store(name, makeSMEntryCreator(name, priority))
+}
+
+func makeSMEntryCreator(name string, priority float32) SMEntryCreator {
+	return func(sitemap.UrlEntry) sitemap.UrlEntry {
+		ent := sitemap.UrlEntry{
+			Loc:        "https://johnietre.com/" + name,
+			Priority:   priority,
+			ChangeFreq: sitemap.ChangeFreqMonthly,
+		}
+		if info, err := os.Stat(getTmplPath(name)); err == nil {
+			ent.LastMod = info.ModTime().Format("2006-01-02")
+		}
+		return ent
+	}
+}
+
+type SMEntryCreator = func(sitemap.UrlEntry) sitemap.UrlEntry

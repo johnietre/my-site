@@ -1,0 +1,153 @@
+{{define "style"}}<link rel="stylesheet" href="./static/css/products.css">{{end}}
+{{define "script"}}
+<script src="./static/js/products.js" defer></script>
+<script src="./static/js/htmx.min.js" defer></script>
+<script src="./static/js/htmx.response-targets.js" defer></script>
+{{end}}
+
+{{define "main"}}
+<h1>Products</h1>
+
+{{with .Data}}
+
+{{with .MaxDescriptionLen}}
+<script>
+  const maxDescriptionLen = {{.}};
+</script>
+{{end}}
+
+{{if .Products}}
+<div class="products-product-list">
+  {{range .Products}}
+  <div class="products-product-card">
+    <div class="products-product-card-name">
+      {{if .Webpage}}
+      <h3><a style="color:aqua" href="{{.Webpage}}">{{.Name}}</a></h3>
+      {{else}}
+      <h3>{{.Name}}</h3>
+      {{end}}
+    </div>
+    <div class="spacer"></div>
+    <div class="products-product-card-description">
+      <p>{{.Description}}</p>
+    </div>
+    <div class="products-product-card-links">
+      {{if .AppStoreLink}}
+      <a class="products-product-card-store-link" href={{.AppStoreLink}}>
+        <img
+          src="./static/images/appstore/dotas.svg"
+          alt="Download on the App Store"
+          height="50"
+        />
+      </a>
+      {{end}}
+      {{if .PlayStoreLink}}
+      <a class="products-product-card-store-link" href={{.PlayStoreLink}}>
+        <img
+          src="./static/images/googleplay/giogp.png"
+          height="50"
+          alt="GET IT ON Google Play"
+        />
+      </a>
+      {{end}}
+    </div>
+    <div class="products-product-card-feedback">
+      <button
+        class="products-product-card-feedback-button"
+        onclick="productsFocusFormWithProduct({{.Name}})"
+      >Submit Feedback ↓</button>
+    </div>
+  </div>
+  {{end}}
+</div>
+
+
+<hr />
+
+<div id="products-form-result" hx-ext="response-targets"></div>
+
+<div hx-ext="response-targets">
+<form
+  id="products-review-form"
+  hx-post="./products/issues" hx-swap="none"
+  hx-target-4xx="#products-form-result"
+  >
+  <!-- onsubmit="productsSubmitReviewForm(this)" -->
+  <div class="products-review-form-selects">
+    <div class="products-review-form-input-div">
+      <label for="product">Product:</label>
+      <select name="product" class="products-review-input" required>
+        <option value="" selected>--Please Select--</option>
+        {{range .Products}}
+        <option value="{{.Name}}">{{.Name}}</option>
+        {{end}}
+      </select>
+    </div>
+    <div class="products-review-form-input-div">
+      <label for="platform">Platform:</label>
+      <select name="platform" class="products-review-input" required>
+        <option value="" selected>--Please Select--</option>
+        <option value="ios">iOS</option>
+        <option value="android">Android</option>
+        <option value="web">Web</option>
+      </select>
+    </div>
+    <div class="products-review-form-input-div">
+      <label for="reason">Reason:</label>
+      <select name="reason" class="products-review-input">
+        <option value="" selected>--Please Select--</option>
+        <option value="question/inquiry">Question/Inquiry</option>
+        <option value="bug/issue">Bug/Issue</option>
+        <option value="feedback">Feedback</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+  </div>
+  <div class="products-review-form-input-div">
+    <label for="email">Email:</label>
+    <input
+      type="email" name="email" placeholder="Email"
+      class="products-review-input"
+      maxlength="255"
+      required/>
+  </div>
+  <div class="products-review-form-input-div">
+    <label for="subject">Subject (Short Description):</label>
+    <input
+      type="text" name="subject" placeholder="Subject"
+      class="products-review-input"
+      maxlength="40" required/>
+  </div>
+  <div class="products-review-form-input-div">
+    <label for="description">Description:</label>
+    <textarea
+      name="description"
+      class="products-review-input"
+      maxlength="{{.MaxDescriptionLen}}"
+      placeholder="Description"
+      cols="80" rows="5"
+      required></textarea>
+    <p style="margin-top: 0"><span id="products-desc-count">0</span>/{{.MaxDescriptionLen}}</p>
+  </div>
+
+  <div id="products-review-buttons">
+    <button
+      type="button"
+      id="products-review-clear-button" class="products-review-button"
+      onclick="productsClearForm()"
+    >Clear</button>
+    <button
+      type="submit"
+      id="products-review-submit-button" class="products-review-button"
+    >Submit</button>
+  </div>
+</form>
+</div>
+
+{{else}}
+<div>No products to show, I guess :/</div>
+{{end}}
+
+{{end}}
+
+{{end}}

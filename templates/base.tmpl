@@ -4,58 +4,330 @@
 
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{{block "title" .}}3J{{end}}</title>
   <link rel="icon" type="x-icon" href="./static/favicon.ico">
   <link rel="stylesheet" href="./static/css/base.css">
+  <link rel="stylesheet" href="./static/font-awesome-4.7.0/css/font-awesome.min.css">
   <script type="module" src="./static/js/base.js" defer></script>
   {{block "script" .}}{{end}}
   {{block "style" .}}{{end}}
 </head>
 
 <body>
-  <div id="app">
+<div id="app">
 
-    <ul id="nav-bar">
-      <li><a {{if eq .Active "home"}}class="nav-bar-active"{{end}} href="./home">Home</a></li>
-      <li><a {{if eq .Active "me"}}class="nav-bar-active"{{end}} href="./me">Me</a></li>
-      <li><a {{if eq .Active "blog"}}class="nav-bar-active"{{end}} href="./blog">Blog</a></li>
-      <li>
-        <a {{if eq .Active "journal"}}class="nav-bar-active"{{end}} href="./journal">Journal</a>
-      </li>
-      <li><a {{if eq .Active "apps"}}class="nav-bar-active"{{end}} href="./apps">Apps</a></li>
-      <li id="nav-search" style="height:100%">
-        <!--
-        <div>
-          <input
-            id="nav-search-input"
-            type="text"
-            placeholder="Search"
-          >
-        </div>
-        -->
-        <p
-          id="nav-search-input"
-          type="text"
-          placeholder="Search"
-        >
-        </p>
-      </li>
-    </ul>
-
-    <div id="main">
-    {{template "main" .}}
-    </div>
-
-    <div id="base-search-div" hidden>
-      <h3 style="text-align:left">Search</h3>
-      <div style="margin-bottom:2px">
-        <button id="base-search-cancel">Cancel</button>
-        <button>Search</button>
+  <nav id="nav-bar">
+    <div class="nav-bar-content">
+      <div class="nav-bar-logo">
+        <a href="./home" title="Home">
+          <img src="./static/images/JohnieTre-trans.png" height="50" width="50"/>
+        </a>
       </div>
-      <!--<textarea rows="1" cols="80"></textarea>-->
-      <div id="base-search-entry" aria-placeholder="Search..." contenteditable></div>
+      <div class="nav-bar-spacer" style="flex:1"></div>
+      <div class="nav-dark-light-toggle">
+        <button
+          id="dark-light-toggle-button"
+          title="Change Theme" onclick="cycleTheme()"
+        >
+          <span id="dark-light-toggle-icon" class="fa fa-lg"></span>
+        </button>
+      </div>
+      <div id="nav-bar-full">
+        <ul class="nav-links">
+          <li class="nav-link-item"><a
+              class="
+              nav-link
+              {{if eq .Active "home"}}nav-link-active{{end}}
+              "
+              href="./home"
+              title="Home"
+              >Home</a></li>
+          <li class="nav-link-item"><a
+              class="
+              nav-link
+              {{if eq .Active "about"}}nav-link-active{{end}}
+              "
+              href="./about"
+              title="About"
+              >About</a></li>
+          <li class="nav-link-item"><a
+              class="
+              nav-link
+              {{if eq .Active "blog"}}nav-link-active{{end}}
+              "
+              href="./blog"
+              title="Blog"
+              >Blog</a></li>
+          <li class="nav-link-item"><a
+              class="
+              nav-link
+              {{if eq .Active "journal"}}nav-link-active{{end}}
+              "
+              href="./journal"
+              title="Journal"
+              >Journal</a>
+          </li>
+          <li class="nav-link-item"><a
+              class="
+              nav-link
+              {{if eq .Active "products"}}nav-link-active{{end}}
+              "
+              href="./products"
+              title="Products"
+              >Products</a></li>
+        </ul>
+        <div class="nav-bar-search">
+          <button onclick="cycleSearch()" class="search-button">
+            <svg
+              id="search-icon"
+              xmlns="http://www.w3.org/2000/svg"
+              width="40" height="40"
+              viewbox="0 0 100 100" fill="none">
+              <circle cx="40" cy="40" r="25" stroke="black" stroke-width="6"/>
+              <line x1="57.678" x2="80" y1="57.678" y2="80" stroke="black" stroke-width="6"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div id="nav-bar-mini">
+        <div class="nav-bar-burger-container">
+          <button
+            onclick="toggleMiniPopup()"
+            class="nav-bar-burger-button"
+            >
+            <svg
+              id="nav-bar-burger-open"
+              xmlns="http://www.w3.org/2000/svg"
+              width="40" height="40"
+              viewBox="0 0 40 40" fill="none">
+              <line x1="5" x2="35" y1="10" y2="10" stroke="black" stroke-width="2"/>
+              <line x1="5" x2="35" y1="20" y2="20" stroke="black" stroke-width="2"/>
+              <line x1="5" x2="35" y1="30" y2="30" stroke="black" stroke-width="2"/>
+            </svg>
+            <svg
+              id="nav-bar-burger-close"
+              xmlns="http://www.w3.org/2000/svg"
+              width="40" height="40"
+              viewBox="0 0 40 40" fill="none"
+              class="hidden">
+              <line x1="10" x2="30" y1="10" y2="30" stroke="black" stroke-width="2"/>
+              <line x1="10" x2="30" y1="30" y2="10" stroke="black" stroke-width="2"/>
+            </svg>
+          </button> 
+        </div>
+      </div>
     </div>
+  </nav>
+
+  <div id="nav-mini-popup" hidden>
+    <ul class="nav-links">
+      <li class="nav-link-item nav-mini-search-container">
+        <input
+          id="nav-mini-search-input" type="search"
+          placeholder="Apologies, not yet implemented :(" size="40"
+          hidden disabled/>
+        <button id="nav-mini-search-button" class="search-button" onclick="doNavMiniSearch()">
+          <svg
+            class="search-icon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="35" height="35"
+            viewbox="0 0 100 100" fill="none">
+            <circle cx="40" cy="40" r="25" stroke="black" stroke-width="6"/>
+            <line x1="57.678" x2="80" y1="57.678" y2="80" stroke="black" stroke-width="6"/>
+          </svg>
+        </button>
+        <button id="nav-mini-search-cancel" onclick="cancelNavMiniSearch()" hidden>
+          <svg
+            class="search-icon"
+            xmlns="http://www.w3.org/2000/svg"
+            width="35" height="35"
+            viewbox="0 0 100 100" fill="none">
+            <line x1="25" x2="75" y1="25" y2="75" stroke="black" stroke-width="6"/>
+            <line x1="25" x2="75" y1="75" y2="25" stroke="black" stroke-width="6"/>
+          </svg>
+        </button>
+      </li>
+      <li class="nav-link-item"><a
+          class="
+          nav-link
+          {{if eq .Active "home"}}nav-link-active{{end}}
+          "
+          href="./home"
+          title="Home"
+          >Home</a></li>
+      <li class="nav-link-item"><a
+          class="
+          nav-link
+          {{if eq .Active "about"}}nav-link-active{{end}}
+          "
+          href="./about"
+          title="About"
+          >About</a></li>
+      <li class="nav-link-item"><a
+          class="
+          nav-link
+          {{if eq .Active "blog"}}nav-link-active{{end}}
+          "
+          href="./blog"
+          title="Blog"
+          >Blog</a></li>
+      <li class="nav-link-item"><a
+          class="
+          nav-link
+          {{if eq .Active "journal"}}nav-link-active{{end}}
+          "
+          href="./journal"
+          title="Journal"
+          >Journal</a>
+      </li>
+      <li class="nav-link-item"><a
+          class="
+          nav-link
+          {{if eq .Active "products"}}nav-link-active{{end}}
+          "
+          href="./products"
+          title="Products"
+          >Products</a></li>
+    </ul>
   </div>
+
+  <div id="main">
+  {{template "main" .}}
+  </div>
+
+  <footer id="footer">
+    <div id="footer-content">
+      <div id="copyright">© 2023 - 2025 JohnieTre</div>
+      <div id="footer-links">
+        <div class="nav-link-item footer-link-item">
+          <a
+            class="
+            footer-link
+            nav-link
+            {{if eq .Active "about"}}nav-link-active{{end}}
+            "
+            href="./about"
+            title="About"
+          >About</a>
+        </div>
+        <div class="nav-link-item footer-link-item">
+          <a
+            class="
+            footer-link
+            nav-link
+            {{if eq .Active "privacy"}}nav-link-active{{end}}
+            "
+            href="./privacy"
+            title="Privacy"
+          >Privacy</a>
+        </div>
+        <div class="nav-link-item footer-link-item">
+          <a
+            class="
+            footer-link
+            nav-link
+            {{if eq .Active "terms"}}nav-link-active{{end}}
+            "
+            href="./terms"
+            title="Terms"
+          >Terms</a>
+        </div>
+      </div>
+      <div id="social-links">
+        <div>
+          <a
+            href="https://github.com/johnietre"
+            target="_blank" class="social-icon"
+          ><span class="fa fa-github fa-lg"></span></a>
+        </div>
+        <div>
+          <a
+            href="https://www.linkedin.com/in/johnie-rodgers-48748114b/"
+            target="_blank" class="social-icon"
+          ><span class="fa fa-linkedin fa-lg"></span></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <div id="base-search-div" hidden>
+    <h3 style="text-align:left;color:black">Search</h3>
+    <div style="margin-bottom:2px">
+      <button id="base-search-cancel">Cancel</button>
+      <button>Search</button>
+    </div>
+    <!--<textarea rows="1" cols="80"></textarea>-->
+    <div id="base-search-entry" aria-placeholder="Search..." contenteditable></div>
+  </div>
+</div>
+
+<script>
+(function() {
+const LIGHT_ICON_NAME = "fa-sun-o";
+const DARK_ICON_NAME = "fa-moon-o";
+const SYSTEM_ICON_NAME = "fa-cog";
+
+function cycleTheme() {
+  const toggleIcon = document.querySelector("#dark-light-toggle-icon");
+  let theme = "dark";
+  if (toggleIcon.classList.contains(LIGHT_ICON_NAME)) {
+    theme = "system";
+  } else if (toggleIcon.classList.contains(DARK_ICON_NAME)) {
+    theme = "light";
+  }
+  setTheme(theme);
+  saveTheme(theme);
+}
+
+function setTheme(theme) {
+  const toggleIcon = document.querySelector("#dark-light-toggle-icon");
+  const body = document.body;
+  if (theme == "light") {
+    toggleIcon.classList.remove(DARK_ICON_NAME);
+    toggleIcon.classList.remove(SYSTEM_ICON_NAME);
+    toggleIcon.classList.add(LIGHT_ICON_NAME);
+    body.classList.remove("dark-theme");
+    body.classList.add("light-theme");
+  } else if (theme == "system") {
+    toggleIcon.classList.remove(LIGHT_ICON_NAME);
+    toggleIcon.classList.remove(DARK_ICON_NAME);
+    toggleIcon.classList.add(SYSTEM_ICON_NAME);
+    body.classList.remove("light-theme");
+    body.classList.remove("dark-theme");
+  } else {
+    toggleIcon.classList.remove(SYSTEM_ICON_NAME);
+    toggleIcon.classList.remove(LIGHT_ICON_NAME);
+    toggleIcon.classList.add(DARK_ICON_NAME);
+    body.classList.remove("light-theme");
+    body.classList.add("dark-theme");
+  }
+}
+
+const THEME_KEY = "johnietre-theme";
+
+function saveTheme(theme) {
+  window.localStorage.setItem(THEME_KEY, theme);
+}
+
+function loadTheme() {
+  const theme = window.localStorage.getItem(THEME_KEY);
+  switch (theme) {
+  case "light":
+  case "system":
+    return theme;
+  default:
+    return "dark";
+  }
+}
+
+setTheme(loadTheme());
+
+window.cycleTheme = cycleTheme;
+})()
+</script>
+
 </body>
 
 </html>

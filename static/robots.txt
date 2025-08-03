@@ -1,0 +1,4 @@
+User-agent: *
+Disallow: /admin
+Host: johnietre.com
+Sitemap: https://johnietre.com/sitemap/sitemap.xml

@@ -14,9 +14,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/johnietre/my-site/server/apps"
 	"github.com/johnietre/my-site/server/blogs"
 	"github.com/johnietre/my-site/server/handlers"
+	"github.com/johnietre/my-site/server/products"
 	"github.com/johnietre/my-site/server/repos"
 	utils "github.com/johnietre/utils/go"
 	"github.com/spf13/cobra"
@@ -61,7 +61,7 @@ func makeRunCmd() *cobra.Command {
 
 	flags.String("static-dir", "$(base-dir)/static", "Path to static directory")
 	flags.String(
-		"apps-db", "$(base-dir)/apps/apps.db", "Path to apps database",
+		"products-db", "$(base-dir)/products/products.db", "Path to products database",
 	)
 	flags.String(
 		"blogs-dir", "$(base-dir)/blogs", "Path to blogs directory",
@@ -81,6 +81,8 @@ func makeRunCmd() *cobra.Command {
 	flags.String("remote-ip", "", "Remote IP to check for to parse")
 
 	flags.String("log", "", "Path to log file (empty routes to stderr)")
+
+	flags.Bool("no-repos", false, "Disable repository refreshing")
 	return cmd
 }
 
@@ -92,22 +94,24 @@ func run(cmd *cobra.Command, args []string) {
 		addr = "127.0.0.1:8000"
 	}
 
-	baseDir, _ := flags.GetString("base-dir")
+	baseDir := utils.Must(flags.GetString("base-dir"))
 
-	certPath, _ := flags.GetString("cert")
-	keyPath, _ := flags.GetString("key")
+	certPath := utils.Must(flags.GetString("cert"))
+	keyPath := utils.Must(flags.GetString("key"))
 
-	staticDir, _ := flags.GetString("static-dir")
-	blogsDir, _ := flags.GetString("blogs-dir")
-	tmplsDir, _ := flags.GetString("tmpls-dir")
+	staticDir := utils.Must(flags.GetString("static-dir"))
+	blogsDir := utils.Must(flags.GetString("blogs-dir"))
+	tmplsDir := utils.Must(flags.GetString("tmpls-dir"))
 
-	appsDbPath, _ := flags.GetString("apps-db")
-	blogsDbPath, _ := flags.GetString("blogs-db")
+	productsDbPath := utils.Must(flags.GetString("products-db"))
+	blogsDbPath := utils.Must(flags.GetString("blogs-db"))
 
-	adminConfigPath, _ := flags.GetString("admin-config")
-	remoteIP, _ := flags.GetString("remote-ip")
+	adminConfigPath := utils.Must(flags.GetString("admin-config"))
+	remoteIP := utils.Must(flags.GetString("remote-ip"))
 
-	logPath, _ := flags.GetString("log")
+	logPath := utils.Must(flags.GetString("log"))
+
+	noRepos := utils.Must(flags.GetBool("no-repos"))
 
 	if logPath != "" {
 		f, err := utils.OpenAppend(logPath)
@@ -126,7 +130,7 @@ func run(cmd *cobra.Command, args []string) {
 
 	replacePath(&adminConfigPath, "$(base-dir)/", baseDir)
 	replacePath(&staticDir, "$(base-dir)/", baseDir)
-	replacePath(&appsDbPath, "$(base-dir)/", baseDir)
+	replacePath(&productsDbPath, "$(base-dir)/", baseDir)
 	replacePath(&blogsDir, "$(base-dir)/", baseDir)
 	replacePath(&blogsDbPath, "$(base-dir)/", baseDir)
 	replacePath(&tmplsDir, "$(base-dir)/", baseDir)
@@ -144,11 +148,11 @@ func run(cmd *cobra.Command, args []string) {
 
 	if err := handlers.InitHandlers(tmplsDir, remoteIP, adminConfig); err != nil {
 		log.Fatalf("error initializing handlers: %v", err)
-	} else if err = apps.InitApps(appsDbPath); err != nil {
-		log.Fatalf("error initializing apps: %v", err)
+	} else if err = products.InitProducts(productsDbPath); err != nil {
+		log.Fatalf("error initializing products: %v", err)
 	} else if err = blogs.InitBlogs(blogsDir, blogsDbPath); err != nil {
 		log.Fatalf("error initializing blogs: %v", err)
-	} else if err = repos.InitRepos(); err != nil {
+	} else if err = repos.InitRepos(!noRepos); err != nil {
 		log.Fatalf("error initializing blogs: %v", err)
 	}
 

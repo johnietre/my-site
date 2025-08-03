@@ -5,29 +5,55 @@
   align-items: center;
 }
 
-#repos-div {
+#repos-repos-div {
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-#repos {
+#repos-repos {
   display: flex;
-  flex-direction: row;
-  justify-content: center;
-  width: 75%;
+  flex-direction: column;
+  align-items: center;
 }
 
-#repos > div {
+.repos-repo {
+  display: flex;
+  flex-direction: column;
+  /*justify-content: space-between;*/
+  align-items: center;
+  width: 350px;
+  aspect-ratio: 1;
+  overflow-y: scroll;
   margin: 5px;
   padding: 10px;
+  /*border: 1px solid var(--border-color);*/
+  border: 1px solid black;
+  border-radius: 10px;
 }
 
-#repos > div:not(:first-child) {
-  border-left: 1px solid black;
-}
-
-#repos > div > a {
+.repos-repo-title {
   font-size: 2em;
+}
+
+.repos-repo-description {
+  text-align: center;
+}
+
+@media (min-width: 780px) {
+
+  #repos-repos {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    flex-wrap: wrap;
+    width: 100vw;
+  }
+
+  /*
+  #repos > div:not(:first-child) {
+    border-left: 1px solid black;
+  }
+  */
 }
