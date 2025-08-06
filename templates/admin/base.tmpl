@@ -3,63 +3,299 @@
 <html lang="en-US">
 
 <head>
-  <title>Admin</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - {{block "title" .}}3J{{end}}</title>
   <link rel="icon" type="x-icon" href="../static/favicon.ico">
-  <link rel="stylesheet" href="../static/css/admin/base.css">
-  <script src="../static/js/htmx.min.js"></script>
+  <link rel="stylesheet" href="../static/css/base.css">
+  <link rel="stylesheet" href="../static/font-awesome-4.7.0/css/font-awesome.min.css">
+  <script type="module" src="../static/js/base.js" defer></script>
+  {{block "script" .}}{{end}}
+  {{block "style" .}}{{end}}
 </head>
 
 <body>
-  <div id="app">
-    <ul id="base-nav-bar" class="nav-bar">
-      <li>
-        <a hx-get="./home" data-name="home" hx-target="#main">Home</a>
-      </li>
-      <li>
-        <a hx-get="./about" data-name="about" hx-target="#main">Me</a>
-      </li>
-      <li>
-        <a hx-get="./blog" data-name="blog" hx-target="#main">Blog</a>
-      </li>
-      <li>
-        <a hx-get="./journal" data-name="journal" hx-target="#main">Journal</a>
-      </li>
-      <li>
-        <a hx-get="./products" data-name="products" hx-target="#main">Apps</a>
-      </li>
-      <li>
-        <a class="nav-bar-active" hx-get="./site" data-name="site" hx-target="#main">Site</a>
-      </li>
-      <li>
-        <a id="base-nav-bar-logout" onclick="baseLogout()">Logout</a>
-      </li>
-    </ul>
+<div id="app">
 
-    <div id="main" hx-get="./site" hx-trigger="load">
+  <nav id="nav-bar">
+    <div class="nav-bar-content">
+      <div class="nav-bar-logo">
+        <a href="../admin" title="Admin">
+          <img src="../static/images/JohnieTre-trans.png" height="50" width="50"/>
+        </a>
+      </div>
+      <div class="nav-bar-spacer" style="flex:1">
+        <span style="text-align:center;color:black;width:100%;height:100%">ADMIN</span>
+      </div>
+      <div class="nav-dark-light-toggle">
+        <button
+          id="dark-light-toggle-button"
+          title="Change Theme" onclick="cycleTheme()"
+        >
+          <span id="dark-light-toggle-icon" class="fa fa-lg"></span>
+        </button>
+      </div>
+      <div id="nav-bar-full">
+        <ul class="nav-links">
+          <li class="nav-link-item"><a
+              class="
+              nav-link
+              {{if eq .Active "home"}}nav-link-active{{end}}
+              "
+              href="../admin/home"
+              title="Home"
+              >Home</a></li>
+          <li class="nav-link-item"><a
+              class="
+              nav-link
+              {{if eq .Active "about"}}nav-link-active{{end}}
+              "
+              href="../admin/about"
+              title="About"
+              >About</a></li>
+          <li class="nav-link-item"><a
+              class="
+              nav-link
+              {{if eq .Active "blog"}}nav-link-active{{end}}
+              "
+              href="../admin/blog"
+              title="Blog"
+              >Blog</a></li>
+          <li class="nav-link-item"><a
+              class="
+              nav-link
+              {{if eq .Active "journal"}}nav-link-active{{end}}
+              "
+              href="../admin/journal"
+              title="Journal"
+              >Journal</a>
+          </li>
+          <li class="nav-link-item"><a
+              class="
+              nav-link
+              {{if eq .Active "products"}}nav-link-active{{end}}
+              "
+              href="../admin/products"
+              title="Products"
+              >Products</a></li>
+          <li class="nav-link-item"><a
+              class="
+              nav-link
+              {{if eq .Active "site"}}nav-link-active{{end}}
+              "
+              href="../admin/site"
+              title="Site"
+              >Site</a></li>
+          <li class="nav-link-item"><a
+              class="nav-link"
+              href="../admin/logout"
+              title="Logout"
+              >Logout</a></li>
+        </ul>
+      </div>
+
+      <div id="nav-bar-mini">
+        <div class="nav-bar-burger-container">
+          <button
+            onclick="toggleMiniPopup()"
+            class="nav-bar-burger-button"
+            >
+            <svg
+              id="nav-bar-burger-open"
+              xmlns="http://www.w3.org/2000/svg"
+              width="40" height="40"
+              viewBox="0 0 40 40" fill="none">
+              <line x1="5" x2="35" y1="10" y2="10" stroke="black" stroke-width="2"/>
+              <line x1="5" x2="35" y1="20" y2="20" stroke="black" stroke-width="2"/>
+              <line x1="5" x2="35" y1="30" y2="30" stroke="black" stroke-width="2"/>
+            </svg>
+            <svg
+              id="nav-bar-burger-close"
+              xmlns="http://www.w3.org/2000/svg"
+              width="40" height="40"
+              viewBox="0 0 40 40" fill="none"
+              class="hidden">
+              <line x1="10" x2="30" y1="10" y2="30" stroke="black" stroke-width="2"/>
+              <line x1="10" x2="30" y1="30" y2="10" stroke="black" stroke-width="2"/>
+            </svg>
+          </button> 
+        </div>
+      </div>
     </div>
+  </nav>
+
+  <div id="nav-mini-popup" hidden>
+    <ul class="nav-links">
+      <li class="nav-link-item"><a
+          class="
+          nav-link
+          {{if eq .Active "home"}}nav-link-active{{end}}
+          "
+          href="./home"
+          title="Home"
+          >Home</a></li>
+      <li class="nav-link-item"><a
+          class="
+          nav-link
+          {{if eq .Active "about"}}nav-link-active{{end}}
+          "
+          href="./about"
+          title="About"
+          >About</a></li>
+      <li class="nav-link-item"><a
+          class="
+          nav-link
+          {{if eq .Active "blog"}}nav-link-active{{end}}
+          "
+          href="./blog"
+          title="Blog"
+          >Blog</a></li>
+      <li class="nav-link-item"><a
+          class="
+          nav-link
+          {{if eq .Active "journal"}}nav-link-active{{end}}
+          "
+          href="./journal"
+          title="Journal"
+          >Journal</a>
+      </li>
+      <li class="nav-link-item"><a
+          class="
+          nav-link
+          {{if eq .Active "products"}}nav-link-active{{end}}
+          "
+          href="./products"
+          title="Products"
+          >Products</a></li>
+    </ul>
   </div>
 
-  <script>
-    for (const link of document.querySelectorAll("#base-nav-bar > li > a")) {
-      link.addEventListener("htmx:xhr:loadend", (ev) => {
-        setNavActive(ev.detail.elt.dataset.name);
-      });
-    }
-    function setNavActive(name) {
-      for (const link of document.querySelectorAll("#base-nav-bar > li > a")) {
-        if (link.dataset.name == name) {
-          link.classList.add("nav-bar-active");
-        } else {
-          link.classList.remove("nav-bar-active");
-        }
-      }
-    }
-    async function baseLogout() {
-      window.location.replace("./logout");
-    }
-  </script>
+  <div id="main">
+  {{block "main" .}}{{end}}
+  </div>
+
+  <footer id="footer">
+    <div id="footer-content">
+      <div id="copyright">© 2023 - 2025 JohnieTre</div>
+      <div id="footer-links">
+        <div class="nav-link-item footer-link-item">
+          <a
+            class="
+            footer-link
+            nav-link
+            {{if eq .Active "about"}}nav-link-active{{end}}
+            "
+            href="./about"
+            title="About"
+          >About</a>
+        </div>
+        <div class="nav-link-item footer-link-item">
+          <a
+            class="
+            footer-link
+            nav-link
+            {{if eq .Active "privacy"}}nav-link-active{{end}}
+            "
+            href="./privacy"
+            title="Privacy"
+          >Privacy</a>
+        </div>
+        <div class="nav-link-item footer-link-item">
+          <a
+            class="
+            footer-link
+            nav-link
+            {{if eq .Active "terms"}}nav-link-active{{end}}
+            "
+            href="./terms"
+            title="Terms"
+          >Terms</a>
+        </div>
+      </div>
+      <div id="social-links">
+        <div>
+          <a
+            href="https://github.com/johnietre"
+            target="_blank" class="social-icon"
+          ><span class="fa fa-github fa-lg"></span></a>
+        </div>
+        <div>
+          <a
+            href="https://www.linkedin.com/in/johnie-rodgers-48748114b/"
+            target="_blank" class="social-icon"
+          ><span class="fa fa-linkedin fa-lg"></span></a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+(function() {
+const LIGHT_ICON_NAME = "fa-sun-o";
+const DARK_ICON_NAME = "fa-moon-o";
+const SYSTEM_ICON_NAME = "fa-cog";
+
+function cycleTheme() {
+  const toggleIcon = document.querySelector("#dark-light-toggle-icon");
+  let theme = "dark";
+  if (toggleIcon.classList.contains(LIGHT_ICON_NAME)) {
+    theme = "system";
+  } else if (toggleIcon.classList.contains(DARK_ICON_NAME)) {
+    theme = "light";
+  }
+  setTheme(theme);
+  saveTheme(theme);
+}
+
+function setTheme(theme) {
+  const toggleIcon = document.querySelector("#dark-light-toggle-icon");
+  const body = document.body;
+  if (theme == "light") {
+    toggleIcon.classList.remove(DARK_ICON_NAME);
+    toggleIcon.classList.remove(SYSTEM_ICON_NAME);
+    toggleIcon.classList.add(LIGHT_ICON_NAME);
+    body.classList.remove("dark-theme");
+    body.classList.add("light-theme");
+  } else if (theme == "system") {
+    toggleIcon.classList.remove(LIGHT_ICON_NAME);
+    toggleIcon.classList.remove(DARK_ICON_NAME);
+    toggleIcon.classList.add(SYSTEM_ICON_NAME);
+    body.classList.remove("light-theme");
+    body.classList.remove("dark-theme");
+  } else {
+    toggleIcon.classList.remove(SYSTEM_ICON_NAME);
+    toggleIcon.classList.remove(LIGHT_ICON_NAME);
+    toggleIcon.classList.add(DARK_ICON_NAME);
+    body.classList.remove("light-theme");
+    body.classList.add("dark-theme");
+  }
+}
+
+const THEME_KEY = "johnietre-theme";
+
+function saveTheme(theme) {
+  window.localStorage.setItem(THEME_KEY, theme);
+}
+
+function loadTheme() {
+  const theme = window.localStorage.getItem(THEME_KEY);
+  switch (theme) {
+  case "light":
+  case "system":
+    return theme;
+  default:
+    return "dark";
+  }
+}
+
+setTheme(loadTheme());
+
+window.cycleTheme = cycleTheme;
+})()
+</script>
+
 </body>
 
 </html>

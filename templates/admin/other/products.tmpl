@@ -1,0 +1,34 @@
+<ul id="apps-nav-bar" class="nav-bar" style="background-color:gray">
+  <li>
+    <a
+      hx-get="./apps/issues"
+      class="nav-bar-active"
+      data-name="issues"
+      hx-target="#apps-main"
+    >Reviews/Issues
+    </a>
+  </li>
+  <li>
+    <a hx-get="./apps/list" data-name="list" hx-target="#apps-main">Apps List</a>
+  </li>
+</ul>
+
+<div id="apps-main" hx-get="./apps/issues" hx-trigger="load">
+</div>
+
+<script type="module">
+for (const link of document.querySelectorAll("#apps-nav-bar > li > a")) {
+  link.addEventListener("htmx:xhr:loadend", (ev) => {
+    setNavActive(ev.detail.elt.dataset.name);
+  });
+}
+function setNavActive(name) {
+  for (const link of document.querySelectorAll("#apps-nav-bar > li > a")) {
+    if (link.dataset.name == name) {
+      link.classList.add("nav-bar-active");
+    } else {
+      link.classList.remove("nav-bar-active");
+    }
+  }
+}
+</script>

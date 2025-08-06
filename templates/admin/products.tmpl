@@ -1,34 +1,382 @@
-<ul id="apps-nav-bar" class="nav-bar" style="background-color:gray">
-  <li>
-    <a
-      hx-get="./apps/issues"
-      class="nav-bar-active"
-      data-name="issues"
-      hx-target="#apps-main"
-    >Reviews/Issues
-    </a>
-  </li>
-  <li>
-    <a hx-get="./apps/list" data-name="list" hx-target="#apps-main">Apps List</a>
-  </li>
-</ul>
+{{define "style"}}
+<link rel="stylesheet" href="../static/css/admin/products.css">
+{{end}}
 
-<div id="apps-main" hx-get="./apps/issues" hx-trigger="load">
+{{define "script"}}
+<script src="../static/js/vue.global.js" defer></script>
+<script type="module" defer>
+(function() {
+
+class EditingType {
+  static New = "new";
+  static Editing = "editing";
+};
+
+function numToStr(n) {
+  if (n >= 10) {
+    return `${n}`;
+  }
+  return `0${n}`;
+}
+
+function dateToInput(d) {
+  return (new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString()).substring(0, 16);
+}
+
+function inputToDate(inp, timestamp = true, secs = true) {
+  if (!inp) {
+    return 0;
+  }
+  const utc = new Date(inp+"Z");
+  const d = new Date(utc.getTime() + utc.getTimezoneOffset() * 60000);
+  if (timestamp) {
+    const ts = d.getTime();
+    if (secs) {
+      return Math.floor(ts / 1000);
+    }
+    return ts;
+  }
+  return d;
+}
+
+const App = {
+  data() {
+    return {
+      products: [],
+      issues: [],
+      currProduct: null,
+      currIssue: null,
+      editingProduct: null,
+      editingIssue: false,
+    };
+  },
+  async mounted() {
+    await this.loadProducts();
+  },
+  methods: {
+    newProduct() {
+      this.currProduct = {
+        //id: -1,
+        name: "",
+        description: "",
+        webpage: "",
+        appStoreLink: "",
+        playStoreLink: "",
+        images: [],
+        hidden: false,
+      };
+      this.editingProduct = EditingType.New;
+    },
+    async getProducts() {
+      const resp = await fetch("../admin/products/list", {
+        headers: {
+          "Accept": "application/json",
+        },
+      });
+      if (!resp.ok) {
+        throw `received error response ${resp.status}: ${await resp.text()}`;
+      }
+      const json = await resp.json();
+      return json;
+    },
+
+    async getIssues(id) {
+      let url = `../admin/products/issues`;
+      if (id === undefined && this.currProduct) {
+        id = this.currProduct.id;
+      }
+      if (id !== undefined) {
+        url += `?product_id=${id}`;
+      }
+      const resp = await fetch(url, {
+        headers: {
+          "Accept": "application/json",
+        },
+      });
+      if (!resp.ok) {
+        throw `received error response ${resp.status}: ${await resp.text()}`;
+      }
+      const json = await resp.json();
+      return json;
+    },
+
+    async saveProduct() {
+      let url = `../admin/products/list`;
+      const opts = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(this.currProduct),
+      };
+      if (this.editingProduct === EditingType.Editing) {
+        opts.method = "PUT";
+        url += `/${this.currProduct.id}`;
+      }
+      const resp = await fetch(url, opts);
+      if (!resp.ok) {
+        const text = await resp.text();
+        alert(`Received error response ${resp.status}: ${text}`);
+        throw `received error response ${resp.status}: ${text}`;
+      }
+      this.cancelEditingProduct();
+      await this.loadProducts();
+    },
+    async saveIssue() {
+      const issue = Object.assign({}, this.currIssue);
+      //issue.createdAt = inputToDate(issue.createdAt);
+      issue.startedAt = inputToDate(issue.startedAt);
+      issue.resolvedAt = inputToDate(issue.resolvedAt);
+      const resp = await fetch(`../admin/products/issues/${issue.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(issue),
+      });
+      if (!resp.ok) {
+        const text = await resp.text();
+        alert(`Received error response ${resp.status}: ${text}`);
+        throw `received error response ${resp.status}: ${text}`;
+      }
+      this.cancelEditingIssue();
+      await this.loadIssues();
+    },
+
+    async loadProducts() {
+      try {
+        const resp = await this.getProducts();
+        if (resp.error) {
+          alert(`Partial error getting products: ${resp.error}`);
+          console.warn(`partial error getting products: ${resp.error}`);
+        }
+        this.products = resp.data;
+      } catch (e) {
+        alert(`Error getting products: ${e}`);
+        console.error(`error getting products: ${e}`);
+      }
+    },
+    async loadIssues() {
+      try {
+        const resp = await this.getIssues();
+        if (resp.error) {
+          alert(`Partial error getting issues: ${resp.error}`);
+          console.warn(`partial error getting issues: ${resp.error}`);
+        }
+        this.issues = resp.data;
+      } catch (e) {
+        alert(`Error getting issues: ${e}`);
+        console.error(`error getting issues: ${e}`);
+      }
+    },
+
+    setCurrProduct(i) {
+      this.currProduct = this.products[i];
+      this.editingProduct = null;
+    },
+    startEditingProduct() {
+      if (!this.currProduct) {
+        return;
+      }
+      this.currProduct = Object.assign({}, this.currProduct);
+      this.editingProduct = EditingType.Editing;
+    },
+    cancelEditingProduct() {
+      this.currProduct = null;
+      this.editingProduct = null;
+    },
+    setCurrIssue(i) {
+      this.currIssue = this.issues[i];
+      this.editingIssue = false;
+    },
+    startEditingIssue() {
+      if (!this.currIssue) {
+        return;
+      }
+      this.currIssue = Object.assign({}, this.currIssue);
+      if (this.currIssue.startedAt) {
+        this.currIssue.startedAt = dateToInput(new Date(this.currIssue.startedAt * 1000));
+      }
+      if (this.currIssue.resolvedAt) {
+        this.currIssue.resolvedAt = dateToInput(new Date(this.currIssue.resolvedAt * 1000));
+      }
+      this.editingIssue = true;
+    },
+    cancelEditingIssue() {
+      this.currIssue = null;
+      this.editingIssue = false;
+    },
+    formatTimestamp(ts) {
+      if (!ts) {
+        return "";
+      }
+      const date = new Date(ts * 1000);
+      const yr = date.getFullYear();
+      const mo = date.getMonth() + 1;
+      const day = date.getDate();
+      const hr = numToStr(date.getHours());
+      const min = numToStr(date.getMinutes());
+      return `${yr}/${mo}/${day} ${hr}:${min}`;
+    },
+    creatingProduct() {
+      return this.editingProduct === EditingType.New;
+    },
+  }
+};
+const app = Vue.createApp(App)
+app.config.compilerOptions.delimiters = ["{|", "|}"];
+app.mount("#products-main");
+
+})()
+</script>
+{{end}}
+
+{{define "main"}}
+
+<div id="products-main">
+
+<div>
+  <div>
+    <button @click="loadProducts()">Load Products</button>
+  </div>
+  <table id="products-products-table">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="(prod, i) in products" @click="setCurrProduct(i)">
+        <td>{|prod.id|}</td>
+        <td>{|prod.name|}</td>
+      </tr>
+    </tbody>
+  </table>
+  <button @click="newProduct()">New Product</button>
 </div>
 
-<script type="module">
-for (const link of document.querySelectorAll("#apps-nav-bar > li > a")) {
-  link.addEventListener("htmx:xhr:loadend", (ev) => {
-    setNavActive(ev.detail.elt.dataset.name);
-  });
-}
-function setNavActive(name) {
-  for (const link of document.querySelectorAll("#apps-nav-bar > li > a")) {
-    if (link.dataset.name == name) {
-      link.classList.add("nav-bar-active");
-    } else {
-      link.classList.remove("nav-bar-active");
-    }
-  }
-}
-</script>
+<form
+  id="products-product-form"
+  v-if="currProduct!==null"
+  style="margin:10px"
+  @submit.prevent="saveProduct()"
+>
+  <hr/>
+
+  <h3 v-if="currProduct.id && !creatingProduct()">
+    Product (ID #{|currProduct.id|}): {|currProduct.name|}
+  </h3>
+  <h3 v-else>New Product</h3>
+  <div>
+    <label for="name">Name:</label>
+    <input type="text" name="name" placeholder="Name" v-model="currProduct.name" :disabled="!editingProduct"/>
+  </div>
+  <div>
+    <label for="description">Description:</label>
+    <br/>
+    <textarea cols="80" name="description" placeholder="Description" v-model="currProduct.description" :disabled="!editingProduct">
+    </textarea>
+  </div>
+  <div>
+    <label for="webpage">Web Page:</label>
+    <input type="url" name="webpage" placeholder="Web Page" v-model="currProduct.webpage" :disabled="!editingProduct"/>
+  </div>
+  <div>
+    <label for="app-store-link">App Store Link:</label>
+    <input type="url" name="app-store-link" placeholder="App Store Link" v-model="currProduct.appStoreLink" :disabled="!editingProduct"/>
+  </div>
+  <div>
+    <label for="play-store-link">Play Store Link:</label>
+    <input type="url" name="play-store-link" placeholder="Play Store Link" v-model="currProduct.playStoreLink" :disabled="!editingProduct"/>
+  </div>
+  <div>
+    <label for="hidden">Hidden</label>
+    <input type="checkbox" name="hidden" v-model="currProduct.hidden" :disabled="!editingProduct"/>
+  </div>
+
+  <div id="products-product-form-buttons">
+    <button type="button" @click="cancelEditingProduct()">Cancel</button>
+    <button type="submit" v-if="editingProduct">
+      <span v-if="creatingProduct()">Create</span>
+      <span v-else>Save</span>
+    </button>
+    <button type="button" @click="startEditingProduct()" v-else>Edit</button>
+  </div>
+</form>
+
+<form
+    id="products-issue-form"
+    v-if="currIssue!==null"
+    style="margin:10px"
+    @submit.prevent="saveIssue()"
+  >
+  <hr/>
+
+  <h3>Issue (ID #{|currIssue.id|}): {|currIssue.name|}</h3>
+  <div>Product ID: {|currIssue.productId|}</div>
+  <div>Email: {|currIssue.email|}</div>
+  <div>Reason: {|currIssue.reason|}</div>
+  <div>Subject: {|currIssue.subject|}</div>
+  <div>Description: {|currIssue.description|}</div>
+  <div>IP Address: {|currIssue.ip|}</div>
+  <div>Created At: {|formatTimestamp(currIssue.createdAt)|}</div>
+  <div v-if="editingIssue">
+    <div>
+      <label for="started-at">Started At:</label>
+      <input type="datetime-local" name="started-at" v-model="currIssue.startedAt"/>
+    </div>
+    <div>
+      <label for="resolved-at">Resolved At:</label>
+      <input type="datetime-local" name="resolved-at" v-model="currIssue.resolvedAt"/>
+    </div>
+  </div>
+  <div v-else>
+    <div>Started At: {|formatTimestamp(currIssue.startedAt)|}</div>
+    <div>Resolved At: {|formatTimestamp(currIssue.resolvedAt)|}</div>
+  </div>
+  <div>
+    <button type="button" @click="cancelEditingIssue()">Cancel</button>
+    <button type="submit" v-if="editingIssue">Save</button>
+    <button type="button" @click="startEditingIssue()" v-else>Edit</button>
+  </div>
+</form>
+
+<div id="products-issues" style="margin:10px">
+  <hr/>
+  <div>
+    <button @click="loadIssues()">Load Issues</button>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Product ID</th>
+        <!--
+        <th>Email</th>
+        -->
+        <th>Reason</th>
+        <th>Created At</th>
+        <th>Started At</th>
+        <th>Resolved At</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr v-for="(iss, i) in issues" @click="setCurrIssue(i)">
+        <td>{|iss.id|}</td>
+        <td>{|iss.productId|}</td>
+        <!--
+        <td>{|iss.email|}</td>
+        -->
+        <td>{|iss.reason|}</td>
+        <td>{|formatTimestamp(iss.createdAt)|}</td>
+        <td>{|formatTimestamp(iss.startedAt)|}</td>
+        <td>{|formatTimestamp(iss.resolvedAt)|}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+</div>
+
+{{end}}

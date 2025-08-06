@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	utils "github.com/johnietre/utils/go"
 	_ "github.com/mattn/go-sqlite3"
@@ -27,6 +28,14 @@ func InitProducts(dbPath string) error {
 		return err
 	}
 	go issueTimeChecker()
+	go func() {
+		t := time.NewTicker(time.Minute)
+		for range t.C {
+			if err := LoadProductData(); err != nil {
+				log.Print("error loading product data: ", err)
+			}
+		}
+	}()
 	return LoadProductData()
 }
 
@@ -52,7 +61,7 @@ func GetProductById(id uint64) (Product, error) {
 	app := Product{}
 	err := row.Scan(
 		&app.Id, &app.Name, &app.Description,
-		&app.Webpage, &app.AppStoreLink, &app.PlayStoreLink, &app.hidden,
+		&app.Webpage, &app.AppStoreLink, &app.PlayStoreLink, &app.Hidden,
 	)
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
 		err = ErrNotFound
@@ -74,7 +83,7 @@ func GetProducts() ([]Product, error) {
 		if err := rows.Scan(
 			&app.Id, &app.Name, &app.Description,
 			&app.Webpage, &app.AppStoreLink, &app.PlayStoreLink,
-			&app.hidden,
+			&app.Hidden,
 		); err != nil {
 			return nil, err
 		}
@@ -87,14 +96,14 @@ func GetProducts() ([]Product, error) {
 func AddProduct(app Product) (Product, error) {
 	res, err := productsDb.Exec(
 		`INSERT INTO products(
-      name,description,webage,app_store_link,play_store_link,hidden
+      name,description,webpage,app_store_link,play_store_link,hidden
     ) VALUES (?,?,?,?,?,?)`,
 		app.Name, app.Description, app.Webpage,
 		app.AppStoreLink, app.PlayStoreLink,
-		app.hidden,
+		app.Hidden,
 	)
 	if err != nil {
-		return app, nil
+		return app, err
 	}
 	id, err := res.LastInsertId()
 	if err != nil {
@@ -112,7 +121,7 @@ func EditProduct(app Product) error {
     WHERE id=?`,
 		app.Name, app.Description,
 		app.Webpage, app.AppStoreLink, app.PlayStoreLink,
-		app.hidden, app.Id,
+		app.Hidden, app.Id,
 	)
 	return err
 }
@@ -124,7 +133,7 @@ func LoadProductData() error {
 		return err
 	}
 	// TODO: something else?
-	utils.FilterSlice(products, func(prod Product) bool { return !prod.hidden })
+	//utils.FilterSlice(products, func(prod Product) bool { return !prod.Hidden })
 	productsPageData.Store(ProductsPageData{
 		Products:          products,
 		MaxDescriptionLen: MaxDescriptionLen,
@@ -142,7 +151,7 @@ func NewProductsPageData() ProductsPageData {
 }
 
 type Product struct {
-	Id            uint64 `json:"id"`
+	Id            uint64 `json:"id,omitempty"`
 	Name          string `json:"name"`
 	Description   string `json:"description"`
 	Webpage       string `json:"webpage"`
@@ -150,5 +159,5 @@ type Product struct {
 	PlayStoreLink string `json:"playStoreLink,omitempty"`
 	// TODO
 	Images []string `json:"images,omitempty"`
-	hidden bool
+	Hidden bool     `json:"hidden,omitempty"`
 }

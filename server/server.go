@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"log"
@@ -14,6 +15,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/caddyserver/certmagic"
 	"github.com/johnietre/my-site/server/blogs"
 	"github.com/johnietre/my-site/server/handlers"
 	"github.com/johnietre/my-site/server/products"
@@ -83,6 +85,12 @@ func makeRunCmd() *cobra.Command {
 	flags.String("log", "", "Path to log file (empty routes to stderr)")
 
 	flags.Bool("no-repos", false, "Disable repository refreshing")
+	flags.Bool(
+		"autotls",
+		false,
+		"TLS automation through certmagic (provide domain name rather than IP:PORT address)",
+	)
+	cmd.MarkFlagsMutuallyExclusive("autotls", "cert")
 	return cmd
 }
 
@@ -112,6 +120,8 @@ func run(cmd *cobra.Command, args []string) {
 	logPath := utils.Must(flags.GetString("log"))
 
 	noRepos := utils.Must(flags.GetBool("no-repos"))
+
+	autotls := utils.Must(flags.GetBool("autotls"))
 
 	if logPath != "" {
 		f, err := utils.OpenAppend(logPath)
@@ -157,7 +167,7 @@ func run(cmd *cobra.Command, args []string) {
 	}
 
 	doneChan := make(chan bool, 2)
-	err = RunServer(addr, staticDir, keyPath, certPath, doneChan)
+	err = RunServer(addr, staticDir, keyPath, certPath, autotls, doneChan)
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalf("error running server: %v", err)
 	}
@@ -165,8 +175,132 @@ func run(cmd *cobra.Command, args []string) {
 	log.Print("finished")
 }
 
-func RunServer(addr, staticDir, keyPath, certPath string, doneChan chan<- bool) error {
-	lc := net.ListenConfig{
+func RunServer(
+	addr,
+	staticDir,
+	keyPath,
+	certPath string,
+	autotls bool,
+	doneChan chan<- bool,
+) error {
+	// Most of this code was copied from certmagic.HTTPS/certmagic.TLS functions.
+	ctx := context.Background()
+
+	var httpLn net.Listener
+	var tlsConf *tls.Config
+	var certCfg *certmagic.Config
+	if autotls {
+		certmagic.DefaultACME.Agreed = true
+		certCfg = certmagic.NewDefault()
+		tlsConf = certCfg.TLSConfig()
+		if err := certCfg.ManageSync(ctx, []string{addr}); err != nil {
+			return err
+		}
+		lc, err := newListenConfig(), error(nil)
+		httpLn, err = lc.Listen(ctx, "tcp", ":80")
+		if err != nil {
+			log.Fatalf("error starting listener: %v", err)
+		}
+		tlsConf.NextProtos = append(
+			[]string{"h2", "http/1.1"},
+			tlsConf.NextProtos...,
+		)
+		addr = ":443"
+	}
+
+	lc := newListenConfig()
+	httpsLn, err := lc.Listen(ctx, "tcp", addr)
+	if err != nil {
+		log.Fatalf("error starting listener: %v", err)
+	}
+	if autotls {
+		httpsLn = tls.NewListener(httpsLn, tlsConf)
+	}
+
+	var httpSrvr, httpsSrvr *http.Server
+	if httpLn != nil {
+		httpSrvr = &http.Server{
+			ReadHeaderTimeout: 10 * time.Second,
+			ReadTimeout:       10 * time.Second,
+			WriteTimeout:      10 * time.Second,
+			IdleTimeout:       10 * time.Second,
+			BaseContext:       func(ln net.Listener) context.Context { return ctx },
+		}
+		if certCfg != nil && len(certCfg.Issuers) != 0 {
+			if am, ok := certCfg.Issuers[0].(*certmagic.ACMEIssuer); ok {
+				httpSrvr.Handler = am.HTTPChallengeHandler(http.HandlerFunc(
+					func(w http.ResponseWriter, r *http.Request) {
+						reqHost, _, err := net.SplitHostPort(r.Host)
+						if err != nil {
+							reqHost = r.Host
+						}
+						to := reqHost + r.URL.RequestURI()
+						w.Header().Set("Connection", "close")
+						http.Redirect(w, r, to, http.StatusMovedPermanently)
+					},
+				))
+			}
+		}
+	}
+	if httpsLn != nil {
+		httpsSrvr = &http.Server{
+			Handler:           handlers.CreateRouter(staticDir),
+			ReadHeaderTimeout: 10 * time.Second,
+			ReadTimeout:       10 * time.Second,
+			WriteTimeout:      10 * time.Second,
+			IdleTimeout:       10 * time.Second,
+			BaseContext:       func(ln net.Listener) context.Context { return ctx },
+			TLSConfig:         tlsConf,
+		}
+	}
+
+	interruptChan := make(chan os.Signal, 5)
+	go func() {
+		<-interruptChan
+		log.Print("shutting down")
+		go func() {
+			if httpSrvr != nil {
+				httpSrvr.Shutdown(context.Background())
+			}
+			if httpsSrvr != nil {
+				httpsSrvr.Shutdown(context.Background())
+			}
+			doneChan <- true
+		}()
+		<-interruptChan
+		log.Print("closing")
+		if httpSrvr != nil {
+			httpSrvr.Close()
+		}
+		if httpsSrvr != nil {
+			httpsSrvr.Close()
+		}
+		doneChan <- true
+	}()
+	signal.Notify(interruptChan, os.Interrupt)
+
+	if httpsLn != nil {
+		log.Printf("running on %s", httpsLn.Addr())
+	}
+	if httpLn != nil {
+		log.Printf("running HTTP on %s", httpLn.Addr())
+	}
+
+	if certPath != "" || keyPath != "" {
+		err = httpsSrvr.ServeTLS(httpsLn, certPath, keyPath)
+	} else {
+		if httpsSrvr != nil {
+			err = httpsSrvr.Serve(httpsLn)
+		}
+		if err == nil && httpSrvr != nil {
+			err = httpSrvr.Serve(httpLn)
+		}
+	}
+	return err
+}
+
+func newListenConfig() net.ListenConfig {
+	return net.ListenConfig{
 		Control: func(network, addr string, c syscall.RawConn) error {
 			return c.Control(func(fd uintptr) {
 				if err := syscall.SetsockoptInt(
@@ -177,39 +311,6 @@ func RunServer(addr, staticDir, keyPath, certPath string, doneChan chan<- bool) 
 			})
 		},
 	}
-	ls, err := lc.Listen(context.Background(), "tcp", addr)
-	if err != nil {
-		log.Fatalf("error starting listener: %v", err)
-	}
-
-	srvr := &http.Server{
-		Addr:              addr,
-		Handler:           handlers.CreateRouter(staticDir),
-		ReadHeaderTimeout: time.Second * 10,
-	}
-
-	interruptChan := make(chan os.Signal, 5)
-	go func() {
-		<-interruptChan
-		log.Print("shutting down")
-		go func() {
-			srvr.Shutdown(context.Background())
-			doneChan <- true
-		}()
-		<-interruptChan
-		log.Print("closing")
-		srvr.Close()
-		doneChan <- true
-	}()
-	signal.Notify(interruptChan, os.Interrupt)
-
-	log.Printf("Running on %s", srvr.Addr)
-	if certPath != "" || keyPath != "" {
-		err = srvr.ServeTLS(ls, certPath, keyPath)
-	} else {
-		err = srvr.Serve(ls)
-	}
-	return err
 }
 
 func makeConfigCmd() *cobra.Command {

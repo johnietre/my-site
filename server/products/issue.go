@@ -32,11 +32,12 @@ func issueTimeChecker() {
 }
 
 type GetIssuesQuery struct {
-	SortBy          *string
-	SortDesc        *bool
-	FilterProduct   *uint64
-	FilterReason    *string
-	FilterRepliedTo *bool
+	SortBy         *string
+	SortDesc       *bool
+	FilterProduct  *uint64
+	FilterReason   *string
+	FilterStarted  *bool
+	FilterResolved *bool
 }
 
 func GetProductIssues(query GetIssuesQuery) (issues []ProductIssue, e error) {
@@ -54,19 +55,21 @@ func GetProductIssues(query GetIssuesQuery) (issues []ProductIssue, e error) {
 			fmt.Sprintf(`reason=%q`, *query.FilterReason),
 		)
 	}
-	if query.FilterRepliedTo != nil {
-		val := 0
-		if *query.FilterRepliedTo {
-			val = 1
-		}
+	if query.FilterStarted != nil {
 		whereClauses = append(
 			whereClauses,
-			fmt.Sprintf(`replied_to=%d`, val),
+			fmt.Sprint(`started_at>0`),
+		)
+	}
+	if query.FilterResolved != nil {
+		whereClauses = append(
+			whereClauses,
+			fmt.Sprint(`resolved_at>0`),
 		)
 	}
 	whereClause := ""
 	if len(whereClauses) != 0 {
-		whereClause = " WHERE" + strings.Join(whereClauses, " AND ")
+		whereClause = " WHERE " + strings.Join(whereClauses, " AND ")
 	}
 
 	sortClause := " ORDER BY id"
@@ -179,15 +182,43 @@ func AddProductIssue(appName string, issue ProductIssue) (ProductIssue, error) {
 	return issue, nil
 }
 
+// EditProductIssue adds an issue for the app.
+func EditProductIssue(issue ProductIssue) error {
+	if _, err := mail.ParseAddress(issue.Email); err != nil {
+		return &AAIError{"bad email"}
+	} else if issue.Reason == "" {
+		return &AAIError{"missing reason"}
+	} else if issue.Subject == "" {
+		return &AAIError{"missing subject"}
+	} else if issue.Description == "" {
+		return &AAIError{"missing description"}
+	} else if len(issue.Description) > MaxDescriptionLen {
+		return &AAIError{"description too long"}
+	}
+	_, err := productsDb.Exec(
+		`UPDATE issues
+    SET product_id=?,email=?,
+      reason=?,subject=?,description=?,
+      created_at=?,started_at=?,resolved_at=?,
+      ip=?
+      WHERE id=?`,
+		issue.ProductId, issue.Email,
+		issue.Reason, issue.Subject, issue.Description,
+		issue.CreatedAt, issue.StartedAt, issue.ResolvedAt,
+		issue.Ip, issue.Id,
+	)
+	return err
+}
+
 type ProductIssue struct {
-	Id          uint64
-	ProductId   uint64
-	Email       string
-	Reason      string
-	Subject     string
-	Description string
-	CreatedAt   int64
-	StartedAt   int64
-	ResolvedAt  int64
-	Ip          string
+	Id          uint64 `json:"id,omitempty"`
+	ProductId   uint64 `json:"productId"`
+	Email       string `json:"email"`
+	Reason      string `json:"reason"`
+	Subject     string `json:"subject"`
+	Description string `jsom:"description"`
+	CreatedAt   int64  `json:"createdAt,omitempty"`
+	StartedAt   int64  `json:"startedAt,omitempty"`
+	ResolvedAt  int64  `json:"resolvedAt,omitempty"`
+	Ip          string `json:"ip,omitempty"`
 }

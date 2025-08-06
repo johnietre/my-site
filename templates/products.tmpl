@@ -18,7 +18,7 @@
 
 {{if .Products}}
 <div class="products-product-list">
-  {{range .Products}}
+  {{range .Products}}{{if not .Hidden}}
   <div class="products-product-card">
     <div class="products-product-card-name">
       {{if .Webpage}}
@@ -58,7 +58,7 @@
       >Submit Feedback ↓</button>
     </div>
   </div>
-  {{end}}
+  {{end}}{{end}}
 </div>
 
 

@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -186,7 +185,10 @@ func defaultHandler(c *jmux.Context) {
 
 func homeHandler(c *jmux.Context) {
 	w, r := c.Writer, c.Request
-	path := cleanPath(r.URL.Path)
+	path := r.URL.Path
+	if path != "" && path[0] == '/' {
+		path = path[1:]
+	}
 	if path != "" && path != "home" {
 		http.NotFound(w, r)
 		return
@@ -316,15 +318,15 @@ func createAdminRouter() jmux.Handler {
 	router.GetFunc("/blog", adminBlogHandler)
 	router.GetFunc("/journal", adminJournalHandler)
 
+	// TODO: rename to products
 	router.GetFunc("/products", adminProductsHandler)
-	router.GetFunc("/products/list", adminProductsListHandler)
-	router.PostFunc("/products/list", adminProductsNewHandler)
-	//router.PostFunc("/products/list/0", adminProductsListNewHandler)
-	router.GetFunc("/products/list/{product_id}", adminProductsListHandler)
-	router.PutFunc("/products/list/{product_id}", adminProductsEditHandler)
 	router.GetFunc("/products/issues", adminProductsIssuesHandler)
-	router.GetFunc("/products/issues/{issue_id}", adminProductsIssuesHandler)
-	router.PutFunc("/products/issues/{issue_id}", adminProductsIssueEditHandler)
+	//router.GetFunc("/products/issues/{product_id}", adminProductsIssuesHandler)
+	router.GetFunc("/products/list", adminProductsListHandler)
+	router.PostFunc("/products/list", adminProductsListNewHandler)
+	router.PostFunc("/products/list/0", adminProductsListNewHandler)
+	//router.GetFunc("/products/list/reload", adminProductsListReloadHandler)
+	router.GetFunc("/products/list/{product_id}", adminProductsListHandler)
 
 	router.GetFunc("/site", adminSiteHandler)
 	router.GetFunc("/site/parse", adminSiteParseHandler)
@@ -342,7 +344,10 @@ func adminHandler(c *jmux.Context) {
 func _adminHandler(c *jmux.Context) {
 	w, r := c.Writer, c.Request
 	// TODO: Login
-	path := cleanPath(r.URL.Path)
+	path := r.URL.Path
+	if path != "" && path[0] == '/' {
+		path = path[1:]
+	}
 	parts := strings.Split(path, "/")
 	// Parts will never have len == 0 since `sep` (second arg) isn't empty
 	switch parts[0] {
@@ -383,275 +388,157 @@ func _adminHandler(c *jmux.Context) {
 }
 
 func adminHomeHandler(c *jmux.Context) {
-	execTmpl("admin/home", c, PageData{Active: "home"})
+  execTmpl("admin/home", c, PageData{Active: "home"})
 }
 
 func adminMeHandler(c *jmux.Context) {
-	execTmpl("admin/about", c, PageData{Active: "about"})
+  execTmpl("admin/about", c, PageData{Active: "about"})
 }
 
 func adminBlogHandler(c *jmux.Context) {
-	execTmpl("admin/blog", c, PageData{Active: "blog"})
+  execTmpl("admin/blog", c, PageData{Active: "blog"})
 }
 
 func adminJournalHandler(c *jmux.Context) {
-	execTmpl("admin/journal", c, PageData{Active: "journal"})
+  execTmpl("admin/journal", c, PageData{Active: "journal"})
 }
 
 func adminProductsHandler(c *jmux.Context) {
-	execTmpl("admin/products", c, PageData{Active: "products"})
-}
-
-func adminProductsListHandler(c *jmux.Context) {
-	if prodIdStr, ok := c.Params["product_id"]; ok {
-		prodId, err := strconv.ParseInt(prodIdStr, 10, 64)
-		if err != nil {
-			c.WriteError(http.StatusBadRequest, "invalid product_id")
-			return
-		}
-		prod, err := products.GetProductById(uint64(prodId))
-		if err != nil {
-			if errors.Is(err, products.ErrNotFound) {
-				c.WriteError(http.StatusNotFound, "product not found")
-			} else {
-				c.WriteError(http.StatusInternalServerError, err.Error())
-				log.Printf("error getting product %d: %v", prodId, err)
-			}
-		} else {
-			c.WriteJSON(JsonResp{Data: []products.Product{prod}})
-		}
-		return
-	}
-	resp := JsonResp{}
-	prods, err := products.GetProducts()
-	if err != nil {
-		log.Print("error getting products: ", err)
-		if prods == nil {
-			c.WriteError(http.StatusInternalServerError, err.Error())
-			return
-		}
-		resp.Error = err.Error()
-	}
-	resp.Data = prods
-	c.WriteJSON(resp)
-}
-
-func adminProductsEditHandler(c *jmux.Context) {
-	ctype := c.ReqHeader().Get("Content-Type")
-	prod := products.Product{}
-	switch ctype {
-	case "application/json":
-		if err := c.ReadBodyJSON(&prod); err != nil {
-			c.WriteError(http.StatusBadRequest, "bad json")
-			return
-		}
-	case "application/x-www-form-urlencoded":
-		if err := c.Request.ParseForm(); err != nil {
-			c.WriteError(http.StatusBadRequest, "bad form data")
-			return
-		}
-		id, err := strconv.ParseInt(c.Request.FormValue("id"), 10, 64)
-		if err != nil {
-			c.WriteError(http.StatusBadRequest, "invalid id")
-			return
-		}
-		prod.Id = uint64(id)
-		prod.Name = c.Request.FormValue("name")
-		prod.Description = c.Request.FormValue("description")
-		prod.Webpage = c.Request.FormValue("webpage")
-		prod.AppStoreLink = c.Request.FormValue("app-store-link")
-		prod.PlayStoreLink = c.Request.FormValue("play-store-link")
-		prod.Images = c.Request.Form["images"]
-	default:
-		c.WriteError(http.StatusBadRequest, "invalid Content-Type")
-		return
-	}
-	if idStr := c.Params["product_id"]; idStr != "" {
-		id, err := strconv.ParseInt(idStr, 10, 64)
-		if err != nil {
-			c.WriteError(http.StatusBadRequest, "invalid id")
-			return
-		}
-		prod.Id = uint64(id)
-	}
-
-	if err := products.EditProduct(prod); err != nil {
-		// TODO: check error to see if ID doesn't exist?
-		log.Printf("error editing product (%+v): %v", prod, err)
-		c.WriteError(http.StatusInternalServerError, err.Error())
-		return
-	}
-}
-
-func adminProductsNewHandler(c *jmux.Context) {
-	ctype := c.ReqHeader().Get("Content-Type")
-	prod := products.Product{}
-	switch ctype {
-	case "application/json":
-		if err := c.ReadBodyJSON(&prod); err != nil {
-			c.WriteError(http.StatusBadRequest, "bad json")
-			return
-		}
-	case "application/x-www-form-urlencoded":
-		if err := c.Request.ParseForm(); err != nil {
-			c.WriteError(http.StatusBadRequest, "bad form data")
-			return
-		}
-		id, err := strconv.ParseInt(c.Request.FormValue("id"), 10, 64)
-		if err != nil {
-			c.WriteError(http.StatusBadRequest, "invalid id")
-			return
-		}
-		prod.Id = uint64(id)
-		prod.Name = c.Request.FormValue("name")
-		prod.Description = c.Request.FormValue("description")
-		prod.Webpage = c.Request.FormValue("webpage")
-		prod.AppStoreLink = c.Request.FormValue("app-store-link")
-		prod.PlayStoreLink = c.Request.FormValue("play-store-link")
-		prod.Images = c.Request.Form["images"]
-		hiddenStr := c.Request.FormValue("hidden")
-		prod.Hidden, err = strconv.ParseBool(hiddenStr)
-		if hiddenStr != "" && err != nil {
-			c.WriteError(http.StatusBadRequest, "invalid hidden")
-			return
-		}
-	default:
-		c.WriteError(http.StatusBadRequest, "invalid Content-Type")
-		return
-	}
-	prod, err := products.AddProduct(prod)
-	if err != nil {
-		// TODO: check error to see if ID doesn't exist?
-		log.Printf("error editing product (%+v): %v", prod, err)
-		c.WriteError(http.StatusInternalServerError, err.Error())
-		return
-	}
-	c.WriteJSON(JsonResp{Data: prod})
+  execTmpl("admin/products", c, PageData{Active: "products"})
 }
 
 func adminProductsIssuesHandler(c *jmux.Context) {
-	giq := products.GetIssuesQuery{}
-	query := c.Query()
+	// TODO
+  giq := products.GetIssuesQuery{}
 
-	if prodIdStr := query.Get("product_id"); prodIdStr != "" {
-		prodId, err := strconv.ParseInt(prodIdStr, 10, 64)
-		if err != nil {
-			c.WriteError(http.StatusBadRequest, "bad product_id")
-			return
-		}
-		giq.FilterProduct = utils.NewT(uint64(prodId))
-	}
-	if sortBy := query.Get("sort_by"); sortBy != "" {
-		giq.SortBy = utils.NewT(sortBy)
-	}
-	if descStr := query.Get("sort_desc"); descStr != "" {
-		desc, err := strconv.ParseBool(descStr)
-		if err != nil {
-			c.WriteError(http.StatusBadRequest, "bad sort_desc")
-			return
-		}
-		giq.SortDesc = utils.NewT(desc)
-	}
-	if reason := query.Get("reason"); reason != "" {
-		giq.SortBy = utils.NewT(reason)
-	}
-	if startedStr := query.Get("started"); startedStr != "" {
-		started, err := strconv.ParseBool(startedStr)
-		if err != nil {
-			c.WriteError(http.StatusBadRequest, "bad started")
-			return
-		}
-		giq.FilterStarted = utils.NewT(started)
-	}
-	if resolvedStr := query.Get("resolved"); resolvedStr != "" {
-		resolved, err := strconv.ParseBool(resolvedStr)
-		if err != nil {
-			c.WriteError(http.StatusBadRequest, "bad resolved")
-			return
-		}
-		giq.FilterResolved = utils.NewT(resolved)
-	}
-
-	resp := JsonResp{}
-	issues, err := products.GetProductIssues(giq)
-	if err != nil {
-		if issues == nil {
-			log.Printf("error getting issues with params %+v: %v", giq, err)
-			c.WriteError(http.StatusInternalServerError, err.Error())
-			return
-		}
-		resp.Error = err.Error()
-	}
-	resp.Data = issues
-	c.WriteJSON(resp)
+  if prodIdStr, ok := c.Params["product_id"]; ok {
+    prodId, err := strconv.ParseInt(prodIdStr, 10, 64)
+    if err != nil {
+      c.WriteError(http.StatusBadRequest, "bad product_id")
+      return
+    }
+    giq.FilterProduct = utils.NewT(uint64(prodId))
+  }
+	/*
+	  partsLen := len(parts)
+	  if partsLen == 0 {
+	    query := r.URL.Query()
+	    giq := products.GetIssuesQuery{}
+	    if val := query.Get("app"); val != "" {
+	    }
+	    if val := query.Get("sort-desc"); val != "" {
+	    }
+	    products.GetIssues(giq)
+	    return
+	  }
+	  r.ParseForm()
+	  switch val := r.FormValue("sort-by"); val {
+	  case "app":
+	  case "reason":
+	  case "timestamp":
+	  case "":
+	  default:
+	    // TODO
+	  }
+	  r.FormValue("sort-desc")
+	  r.FormValue("filter-app")
+	  switch val := r.FormValue("filter-reason"); val {
+	    // TODO
+	  }
+	  if val := r.FormValue("filter-replied-to"); val != "" {
+	  }
+	*/
 }
 
-func adminProductsIssueEditHandler(c *jmux.Context) {
-	ctype := c.ReqHeader().Get("Content-Type")
-	issue := products.ProductIssue{}
-	switch ctype {
-	case "application/json":
-		if err := c.ReadBodyJSON(&issue); err != nil {
-			println(err.Error())
-			c.WriteError(http.StatusBadRequest, "bad json")
+func adminProductsListHandler(c *jmux.Context) {
+	/*
+		w, r := c.Writer, c.Request
+		partsLen := len(parts)
+		if partsLen == 0 {
+			data, err := products.NewAALPageData()
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				log.Printf("error getting admin/products/list page data: %v", err)
+			} else {
+				execTmpl("admin/products-list", c, PageData{Data: data})
+			}
 			return
 		}
-	case "application/x-www-form-urlencoded":
-		if err := c.Request.ParseForm(); err != nil {
-			c.WriteError(http.StatusBadRequest, "bad form data")
+		if partsLen != 1 {
+			http.Error(w, "Not found", http.StatusNotFound)
 			return
 		}
-		id, err := strconv.ParseInt(c.Request.FormValue("id"), 10, 64)
+		switch parts[0] {
+		case "0":
+			handleAdminProductsListNew(c)
+			return
+		case "reload":
+			if r.Method != http.MethodPost {
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			} else if err := products.LoadProductData(); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			} else {
+				w.Write([]byte("Success"))
+			}
+			return
+		}
+		id, err := strconv.ParseUint(parts[0], 10, 64)
 		if err != nil {
-			c.WriteError(http.StatusBadRequest, "invalid id")
+			http.Error(w, "Not found", http.StatusNotFound)
 			return
 		}
-		prodId, err := strconv.ParseInt(c.Request.FormValue("product-id"), 10, 64)
-		if err != nil {
-			c.WriteError(http.StatusBadRequest, "invalid product-id")
-			return
-		}
-		issue.ProductId = uint64(prodId)
-		issue.Id = uint64(id)
-		issue.Email = c.Request.FormValue("email")
-		issue.Reason = c.Request.FormValue("reason")
-		issue.Subject = c.Request.FormValue("subject")
-		issue.Description = c.Request.FormValue("description")
-		issue.CreatedAt, err = strconv.ParseInt(c.Request.FormValue("created-at"), 10, 64)
-		if err != nil {
-			c.WriteError(http.StatusBadRequest, "invalid created-at")
-			return
-		}
-		issue.StartedAt, err = strconv.ParseInt(c.Request.FormValue("started-at"), 10, 64)
-		if err != nil {
-			c.WriteError(http.StatusBadRequest, "invalid started-at")
-			return
-		}
-		issue.ResolvedAt, err = strconv.ParseInt(c.Request.FormValue("resolved-at"), 10, 64)
-		if err != nil {
-			c.WriteError(http.StatusBadRequest, "invalid resolved-at")
-			return
-		}
-		issue.Ip = c.Request.FormValue("ip")
-	default:
-		c.WriteError(http.StatusBadRequest, "invalid Content-Type")
-		return
-	}
-	if idStr := c.Params["issue_id"]; idStr != "" {
-		id, err := strconv.ParseInt(idStr, 10, 64)
-		if err != nil {
-			c.WriteError(http.StatusBadRequest, "invalid id")
-			return
-		}
-		issue.Id = uint64(id)
-	}
+		handleAdminProductsListEdit(c, id)
+	*/
+}
 
-	if err := products.EditProductIssue(issue); err != nil {
-		// TODO: check error to see if ID doesn't exist?
-		log.Printf("error editing issue (%+v): %v", issue, err)
-		c.WriteError(http.StatusInternalServerError, err.Error())
+func adminProductsListEditHandler(c *jmux.Context, id uint64) {
+	w, r := c.Writer, c.Request
+	// TODO
+	data, err := products.NewAALEPageData(id)
+	if r.Method == http.MethodPut {
+		//
 		return
+	} else {
+		if err != nil {
+			if err == products.ErrNotFound {
+				http.Error(
+					w,
+					fmt.Sprintf("app with ID %d not found", id),
+					http.StatusNotFound,
+				)
+			} else {
+				log.Printf("error getting app data: %v", err)
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+			return
+		}
 	}
+	execTmpl("admin/products-list-edit", c, PageData{Data: data})
+}
+
+func adminProductsListNewHandler(c *jmux.Context) {
+	w, r := c.Writer, c.Request
+	data, _ := products.NewAALEPageData(0)
+	if r.Method == http.MethodPost {
+		app := products.Product{
+			Name:          r.PostFormValue("name"),
+			Description:   r.PostFormValue("description"),
+			Webpage:       r.PostFormValue("webpage"),
+			AppStoreLink:  r.PostFormValue("app-store-link"),
+			PlayStoreLink: r.PostFormValue("play-store-link"),
+		}
+		if app.Name == "" {
+			http.Error(w, "missing app name", http.StatusBadRequest)
+			return
+		}
+		app, err := products.AddProduct(app)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		data.Product = app
+	}
+	execTmpl("admin/products-list-edit", c, PageData{Data: data})
 }
 
 type AdminSiteData struct {
@@ -726,14 +613,17 @@ type AdminJWTClaims struct {
 
 func adminAuthMiddleware(next jmux.Handler) jmux.Handler {
 	return jmux.HandlerFunc(func(c *jmux.Context) {
-		path := cleanPath(c.Path())
+		path := c.Path()
+		if path != "" && path[0] == '/' {
+			path = path[1:]
+		}
 		if path == "login" {
 			adminLoginHandler(c)
 			return
 		}
 		cookie, _ := c.Cookie(adminConfig.Cookie.Name)
 		if path != "logout" {
-			if validateAdminJwtCookie(cookie) {
+			if validateAdminJwtCookie(cookie) || true {
 				next.ServeC(c)
 				return
 			}
@@ -742,7 +632,7 @@ func adminAuthMiddleware(next jmux.Handler) jmux.Handler {
 		cookie = newAdminJwtCookie("")
 		cookie.Expires, cookie.MaxAge = time.Time{}, -1
 		c.SetCookie(cookie)
-		if path == "" {
+		if path == "" || path == "/" {
 			execTmpl("admin/login", c, PageData{})
 			return
 		} else if path == "logout" {
@@ -754,64 +644,22 @@ func adminAuthMiddleware(next jmux.Handler) jmux.Handler {
 	})
 }
 
-const (
-	maxLoginAttempts   = 5
-	loginAttemptsReset = time.Hour * 12
-)
-
-type LoginAttempts struct {
-	numAttempts  int
-	firstAttempt time.Time
-}
-
-var (
-	loginAttempts = utils.NewMutex(utils.NewMap[string, LoginAttempts]())
-)
-
 func adminLoginHandler(c *jmux.Context) {
 	w, r := c.Writer, c.Request
-
-	laMap := *loginAttempts.Lock()
-	defer loginAttempts.Unlock()
-
-	ip, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil {
-		ip = r.RemoteAddr
-	}
-	attempts, ok := laMap.GetOk(ip)
-	now := time.Now()
-	if !ok {
-		attempts.firstAttempt = now
-	} else if attempts.firstAttempt.Sub(now) >= loginAttemptsReset {
-		attempts.numAttempts = 0
-	}
-	if attempts.numAttempts >= maxLoginAttempts {
-		w.WriteHeader(http.StatusUnauthorized)
-		execTmpl("admin/login", c, PageData{})
-		return
-	}
-
 	r.ParseForm()
 	username := r.PostFormValue("username")
 	password := r.PostFormValue("password")
 	if username != adminConfig.Username || password != adminConfig.Password {
-		attempts.numAttempts++
-		if attempts.numAttempts >= maxLoginAttempts {
-			log.Printf("IP %s reached max login attempts (%d)", ip, maxLoginAttempts)
-		}
-		laMap.Set(ip, attempts)
 		w.WriteHeader(http.StatusUnauthorized)
 		execTmpl("admin/login", c, PageData{})
 		return
 	}
-	laMap.Delete(ip)
 	tokStr, err := newAdminJwt(username)
 	if err != nil {
-		log.Printf("error creating admin jwt: %v", err)
+		log.Printf("eror creating admin jwt: %v", err)
 		http.Error(w, "internal server error", http.StatusInternalServerError)
 		return
 	}
-	log.Printf("IP %s logged into admin", ip)
 	http.SetCookie(w, newAdminJwtCookie(tokStr))
 	//execTmpl("admin/base", c, PageData{})
 	w.Header().Set("Location", "../admin")
@@ -917,14 +765,7 @@ func loadTmpl(tmplName string) error {
 	var tmpl *template.Template
 	var err error
 	if strings.HasPrefix(tmplName, "admin/") {
-		if tmplName != "admin/login" {
-			tmpl, err = template.ParseFiles(
-				getTmplPath("admin/base"),
-				getTmplPath(tmplName),
-			)
-		} else {
-			tmpl, err = template.ParseFiles(getTmplPath(tmplName))
-		}
+		tmpl, err = template.ParseFiles(getTmplPath("admin/base"), getTmplPath(tmplName))
 	} else {
 		tmpl, err = template.ParseFiles(baseTmplPath, getTmplPath(tmplName))
 	}
@@ -939,21 +780,9 @@ func loadTmpl(tmplName string) error {
 	return nil
 }
 
-func cleanPath(path string) string {
-	if path != "" && path[0] == '/' {
-		return path[1:]
-	}
-	return path
-}
-
 type PageData struct {
 	Active string
 	Data   any
-}
-
-type JsonResp struct {
-	Data  any    `json:"data,omitempty"`
-	Error string `json:"error,omitempty"`
 }
 
 func storeSMEntryCreator(name string, priority float32) {
