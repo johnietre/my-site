@@ -15,3 +15,5 @@ A website outlining me, myself, and I
 - When submitting product review, remove platform options invalid for product
 - Admin
 - Log when product/issue created/edited
+- Option to pass config file with CLI opts
+- Request tracking/logging

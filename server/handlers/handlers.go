@@ -96,12 +96,14 @@ func CreateRouter(staticDir string) http.Handler {
 	router.All("/products", createProductsRouter()).MatchAny(jmux.MethodsAll())
 
 	router.All("/admin/", createAdminRouter()).MatchAny(jmux.MethodsAll())
+	/* TODO: delete?
 	router.GetFunc("/parse", func(c *jmux.Context) {
 		if parseTemplate(c) {
 			http.Redirect(c.Writer, c.Request, "/", http.StatusFound)
 			return
 		}
 	})
+	*/
 
 	router.GetFunc("/robots.txt", func(c *jmux.Context) {
 		c.WriteFile(filepath.Join(staticDir, "robots.txt"))
@@ -328,6 +330,13 @@ func createAdminRouter() jmux.Handler {
 
 	router.GetFunc("/site", adminSiteHandler)
 	router.GetFunc("/site/parse", adminSiteParseHandler)
+
+	router.GetFunc("/parse", func(c *jmux.Context) {
+		if parseTemplate(c) {
+			http.Redirect(c.Writer, c.Request, "..", http.StatusFound)
+			return
+		}
+	})
 
 	return jmux.WrapH(http.StripPrefix(
 		"/admin",
