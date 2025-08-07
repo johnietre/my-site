@@ -12,6 +12,7 @@
   <script type="module" src="./static/js/base.js" defer></script>
   {{block "script" .}}{{end}}
   {{block "style" .}}{{end}}
+  {{if .ExtraHtmlHead}}{{.ExtraHtmlHead}}{{end}}
 </head>
 
 <body>
@@ -234,6 +235,28 @@
             title="Terms"
           >Terms</a>
         </div>
+        <div class="nav-link-item footer-link-item">
+          <a
+            class="
+            footer-link
+            nav-link
+            {{if eq .Active "cookies"}}nav-link-active{{end}}
+            "
+            href="./cookies"
+            title="Cookies"
+          >Cookies</a>
+        </div>
+        <div class="nav-link-item footer-link-item">
+          <a
+            class="
+            footer-link
+            nav-link
+            {{if eq .Active "disclaimer"}}nav-link-active{{end}}
+            "
+            href="./disclaimer"
+            title="Disclaimer"
+          >Disclaimer</a>
+        </div>
       </div>
       <div id="social-links">
         <div>
@@ -328,6 +351,7 @@ window.cycleTheme = cycleTheme;
 })()
 </script>
 
+{{if .ExtraHtmlBody}}{{.ExtraHtmlBody}}{{end}}
 </body>
 
 </html>

@@ -10,3 +10,8 @@
 
 .DS_Store
 admin-config.json
+
+privacy.tmpl
+terms.tmpl
+cookies.tmpl
+disclaimer.tmpl

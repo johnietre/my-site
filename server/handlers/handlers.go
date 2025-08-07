@@ -1,3 +1,4 @@
+// TOOD: migrate to using cfg rather than multiple separate variables
 package handlers
 
 import (
@@ -31,11 +32,14 @@ var (
 	tmplsDir, remoteIP string
 	baseTmplPath       string
 	navbarTmplPath     string
+	cfg                Config
 
 	adminUsername, adminPassword string
 
 	tmplNames = []string{
 		"home", "about", "blog", "journal", "products",
+		"privacy", "terms", "cookies", "disclaimer",
+
 		"admin/login", "admin/base",
 		"admin/admin",
 		"admin/home",
@@ -49,15 +53,26 @@ var (
 	}
 	tmpls = utils.NewSyncMap[string, *template.Template]()
 
+	hasPoliciesMap = utils.NewSyncMap[string, bool]()
+
 	// TODO: replace with something that runs daily
 	smUrlEntryCreators = utils.NewSyncMap[string, func(sitemap.UrlEntry) sitemap.UrlEntry]()
 
 	proxy = goryproxy.NewRouterHandler()
 )
 
-func InitHandlers(tmplsDirPath, remIP string, aConfig AdminConfig) error {
-	tmplsDir, remoteIP = tmplsDirPath, remIP
-	adminConfig = aConfig
+type Config struct {
+	TmplsDirPath      string
+	RemoteIP          string
+	AdminConfig       AdminConfig
+	ExtraHtmlHeadPath *string
+	ExtraHtmlBodyPath *string
+}
+
+func InitHandlers(config Config) error {
+	cfg = config
+	tmplsDir, remoteIP = cfg.TmplsDirPath, cfg.RemoteIP
+	adminConfig = cfg.AdminConfig
 	baseTmplPath = filepath.Join(tmplsDir, "base.tmpl")
 	navbarTmplPath = filepath.Join(tmplsDir, "navbar.tmpl")
 
@@ -105,6 +120,10 @@ func CreateRouter(staticDir string) http.Handler {
 	})
 	*/
 
+	router.Get("/privacy", createPolicyHandler("privacy"))
+	router.Get("/terms", createPolicyHandler("terms"))
+	router.Get("/cookies", createPolicyHandler("cookies"))
+	router.Get("/disclaimer", createPolicyHandler("disclaimer"))
 	router.GetFunc("/robots.txt", func(c *jmux.Context) {
 		c.WriteFile(filepath.Join(staticDir, "robots.txt"))
 	})
@@ -194,12 +213,12 @@ func homeHandler(c *jmux.Context) {
 		return
 	}
 	data := PageData{Active: "home", Data: repos.NewReposPageData()}
-	execTmpl("home", c, data)
+	execTmplWithExtra("home", c, data)
 }
 
 func meHandler(c *jmux.Context) {
 	data := PageData{Active: "about"}
-	execTmpl("about", c, data)
+	execTmplWithExtra("about", c, data)
 }
 
 func blogHandler(c *jmux.Context) {
@@ -214,12 +233,12 @@ func blogHandler(c *jmux.Context) {
 	if false {
 		data = PageData{Active: "blog", Data: blogs.NewBlogsPageData()}
 	}
-	execTmpl("blog", c, data)
+	execTmplWithExtra("blog", c, data)
 }
 
 func productsHandler(c *jmux.Context) {
 	data := PageData{Active: "products", Data: products.NewProductsPageData()}
-	execTmpl("products", c, data)
+	execTmplWithExtra("products", c, data)
 }
 
 func productsNewIssueHandler(c *jmux.Context) {
@@ -263,12 +282,12 @@ func productsNewIssueHandler(c *jmux.Context) {
 
 func journalHandler(c *jmux.Context) {
 	data := PageData{Active: "journal"}
-	execTmpl("journal", c, data)
+	execTmplWithExtra("journal", c, data)
 }
 
 func getJournalHandler(c *jmux.Context) {
 	data := PageData{Active: "journal"}
-	execTmpl("journal", c, data)
+	execTmplWithExtra("journal", c, data)
 }
 
 // TODO
@@ -907,6 +926,45 @@ func parseTemplate(c *jmux.Context) bool {
 	return true
 }
 
+func execTmplWithExtra(name string, c *jmux.Context, data PageData) {
+	if cfg.ExtraHtmlHeadPath != nil {
+		bytes, err := os.ReadFile(*cfg.ExtraHtmlHeadPath)
+		if err != nil {
+			if !os.IsNotExist(err) {
+				log.Printf(
+					"error loading extra html head from %s: %v",
+					*cfg.ExtraHtmlHeadPath,
+					err,
+				)
+			}
+		} else {
+			data.ExtraHtmlHead = template.HTML(bytes)
+		}
+	}
+	if cfg.ExtraHtmlBodyPath != nil {
+		bytes, err := os.ReadFile(*cfg.ExtraHtmlBodyPath)
+		if err != nil {
+			if !os.IsNotExist(err) {
+				log.Printf(
+					"error loading extra html head from %s: %v",
+					*cfg.ExtraHtmlBodyPath,
+					err,
+				)
+			}
+		} else {
+			data.ExtraHtmlBody = template.HTML(bytes)
+		}
+	}
+	if tmpl, loaded := tmpls.Load(name); !loaded {
+		log.Printf("missing %s template", name)
+		c.InternalServerError("Internal server error")
+	} else if err := tmpl.Execute(c.Writer, data); err != nil {
+		log.Printf("error executing %s template: %v", name, err)
+		// NOTE: This could result in probable double-write
+		//http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}
+}
+
 func execTmpl(name string, c *jmux.Context, data PageData) {
 	if tmpl, loaded := tmpls.Load(name); !loaded {
 		log.Printf("missing %s template", name)
@@ -935,7 +993,26 @@ func loadTmpl(tmplName string) error {
 			tmpl, err = template.ParseFiles(getTmplPath(tmplName))
 		}
 	} else {
-		tmpl, err = template.ParseFiles(baseTmplPath, getTmplPath(tmplName))
+		path := getTmplPath(tmplName)
+		switch tmplName {
+		case "privacy":
+			fallthrough
+		case "terms":
+			fallthrough
+		case "cookies":
+			fallthrough
+		case "disclaimer":
+			if _, err := os.Stat(path); err == nil {
+				hasPoliciesMap.Store(tmplName, true)
+			} else {
+				hasPoliciesMap.Store(tmplName, false)
+				if os.IsNotExist(err) {
+					return nil
+				}
+				return err
+			}
+		}
+		tmpl, err = template.ParseFiles(baseTmplPath, path)
 	}
 	if err != nil {
 		return fmt.Errorf("error parsing %s tmpl file: %v", tmplName, err)
@@ -948,6 +1025,16 @@ func loadTmpl(tmplName string) error {
 	return nil
 }
 
+func createPolicyHandler(name string) jmux.Handler {
+	return jmux.HandlerFunc(func(c *jmux.Context) {
+		if !utils.First(hasPoliciesMap.Load(name)) {
+			c.WriteError(http.StatusNotFound, "policy/document not found")
+			return
+		}
+		execTmplWithExtra(name, c, PageData{Active: name})
+	})
+}
+
 func cleanPath(path string) string {
 	if path != "" && path[0] == '/' {
 		return path[1:]
@@ -956,8 +1043,10 @@ func cleanPath(path string) string {
 }
 
 type PageData struct {
-	Active string
-	Data   any
+	Active        string
+	Data          any
+	ExtraHtmlHead template.HTML
+	ExtraHtmlBody template.HTML
 }
 
 type JsonResp struct {

@@ -80,6 +80,14 @@ func makeRunCmd() *cobra.Command {
 	flags.String(
 		"tmpls-dir", "$(base-dir)/templates", "Path to templates directory",
 	)
+	flags.String(
+		"extra-html-head",
+		"", "Optional path to file to append extra HTML to <head> from",
+	)
+	flags.String(
+		"extra-html-body",
+		"", "Optional path to file to append extra HTML to <body> from",
+	)
 
 	flags.String(
 		"admin-config",
@@ -116,6 +124,8 @@ func run(cmd *cobra.Command, args []string) {
 	staticDir := utils.Must(flags.GetString("static-dir"))
 	blogsDir := utils.Must(flags.GetString("blogs-dir"))
 	tmplsDir := utils.Must(flags.GetString("tmpls-dir"))
+	extraHtmlHeadPath := utils.Must(flags.GetString("extra-html-head"))
+	extraHtmlBodyPath := utils.Must(flags.GetString("extra-html-body"))
 
 	productsDbPath := utils.Must(flags.GetString("products-db"))
 	blogsDbPath := utils.Must(flags.GetString("blogs-db"))
@@ -168,7 +178,18 @@ func run(cmd *cobra.Command, args []string) {
 		log.Fatalf("error decoding admin config file: %v", err)
 	}
 
-	if err := handlers.InitHandlers(tmplsDir, remoteIP, adminConfig); err != nil {
+	handlersConfig := handlers.Config{
+		TmplsDirPath: tmplsDir,
+		RemoteIP:     remoteIP,
+		AdminConfig:  adminConfig,
+	}
+	if extraHtmlHeadPath != "" {
+		handlersConfig.ExtraHtmlHeadPath = utils.NewT(extraHtmlHeadPath)
+	}
+	if extraHtmlBodyPath != "" {
+		handlersConfig.ExtraHtmlBodyPath = utils.NewT(extraHtmlBodyPath)
+	}
+	if err := handlers.InitHandlers(handlersConfig); err != nil {
 		log.Fatalf("error initializing handlers: %v", err)
 	} else if err = products.InitProducts(productsDbPath); err != nil {
 		log.Fatalf("error initializing products: %v", err)
