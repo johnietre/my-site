@@ -22,6 +22,12 @@ import (
 	"github.com/johnietre/my-site/server/repos"
 	utils "github.com/johnietre/utils/go"
 	"github.com/spf13/cobra"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+)
+
+var (
+	zapLogger *zap.Logger
 )
 
 func init() {
@@ -88,7 +94,7 @@ func makeRunCmd() *cobra.Command {
 	flags.Bool(
 		"autotls",
 		false,
-		"TLS automation through certmagic (provide domain name rather than IP:PORT address)",
+		"TLS automation through certmagic (provide domain name rather than IP:PORT address); the email address used to for the ACME server account can be specified with the MY_SITE_ACME_EMAIL environment variable",
 	)
 	cmd.MarkFlagsMutuallyExclusive("autotls", "cert")
 	return cmd
@@ -128,7 +134,13 @@ func run(cmd *cobra.Command, args []string) {
 		if err != nil {
 			log.Fatalf("error opening log file: %v", err)
 		}
-		log.SetOutput(f)
+		w := zapcore.Lock(f)
+		log.SetOutput(w)
+		zapLogger = zap.New(zapcore.NewCore(
+			zapcore.NewConsoleEncoder(zap.NewProductionEncoderConfig()),
+			w,
+			zap.InfoLevel,
+		))
 	}
 
 	if baseDir == "" {
@@ -167,7 +179,14 @@ func run(cmd *cobra.Command, args []string) {
 	}
 
 	doneChan := make(chan bool, 2)
-	err = RunServer(addr, staticDir, keyPath, certPath, autotls, doneChan)
+	err = RunServer(RunServerConfig{
+		Addr:      addr,
+		StaticDir: staticDir,
+		KeyPath:   keyPath,
+		CertPath:  certPath,
+		Autotls:   autotls,
+		ACMEEmail: os.Getenv("MY_SITE_ACME_EMAIL"),
+	}, doneChan)
 	if err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalf("error running server: %v", err)
 	}
@@ -176,11 +195,7 @@ func run(cmd *cobra.Command, args []string) {
 }
 
 func RunServer(
-	addr,
-	staticDir,
-	keyPath,
-	certPath string,
-	autotls bool,
+	cfg RunServerConfig,
 	doneChan chan<- bool,
 ) error {
 	// Most of this code was copied from certmagic.HTTPS/certmagic.TLS functions.
@@ -189,11 +204,16 @@ func RunServer(
 	var httpLn net.Listener
 	var tlsConf *tls.Config
 	var certCfg *certmagic.Config
-	if autotls {
+	if cfg.Autotls {
 		certmagic.DefaultACME.Agreed = true
+		certmagic.DefaultACME.Email = cfg.ACMEEmail
+		if zapLogger != nil {
+			certmagic.DefaultACME.Logger = zapLogger
+			certmagic.Default.Logger = zapLogger
+		}
 		certCfg = certmagic.NewDefault()
 		tlsConf = certCfg.TLSConfig()
-		if err := certCfg.ManageSync(ctx, []string{addr}); err != nil {
+		if err := certCfg.ManageSync(ctx, []string{cfg.Addr}); err != nil {
 			return err
 		}
 		lc, err := newListenConfig(), error(nil)
@@ -205,15 +225,15 @@ func RunServer(
 			[]string{"h2", "http/1.1"},
 			tlsConf.NextProtos...,
 		)
-		addr = ":443"
+		cfg.Addr = ":443"
 	}
 
 	lc := newListenConfig()
-	httpsLn, err := lc.Listen(ctx, "tcp", addr)
+	httpsLn, err := lc.Listen(ctx, "tcp", cfg.Addr)
 	if err != nil {
 		log.Fatalf("error starting listener: %v", err)
 	}
-	if autotls {
+	if cfg.Autotls {
 		httpsLn = tls.NewListener(httpsLn, tlsConf)
 	}
 
@@ -244,7 +264,7 @@ func RunServer(
 	}
 	if httpsLn != nil {
 		httpsSrvr = &http.Server{
-			Handler:           handlers.CreateRouter(staticDir),
+			Handler:           handlers.CreateRouter(cfg.StaticDir),
 			ReadHeaderTimeout: 10 * time.Second,
 			ReadTimeout:       10 * time.Second,
 			WriteTimeout:      10 * time.Second,
@@ -286,8 +306,8 @@ func RunServer(
 		log.Printf("running HTTP on %s", httpLn.Addr())
 	}
 
-	if certPath != "" || keyPath != "" {
-		err = httpsSrvr.ServeTLS(httpsLn, certPath, keyPath)
+	if cfg.CertPath != "" || cfg.KeyPath != "" {
+		err = httpsSrvr.ServeTLS(httpsLn, cfg.CertPath, cfg.KeyPath)
 	} else {
 		if httpsSrvr != nil {
 			err = httpsSrvr.Serve(httpsLn)
@@ -350,6 +370,13 @@ func makeConfigCmd() *cobra.Command {
 
 	flags.String("new-admin", "", "Create admin config file")
 	return cmd
+}
+
+type RunServerConfig struct {
+	Addr                         string
+	StaticDir, KeyPath, CertPath string
+	Autotls                      bool
+	ACMEEmail                    string
 }
 
 func replacePath(strPtr *string, from, to string) {

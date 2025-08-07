@@ -2,7 +2,7 @@
   "username": "test",
   "password": "test",
   "cookie": {
-    "name": "johnietre-admin",
+    "name": "test-admin",
     "path": "/admin",
     "domain": "127.0.0.1",
     "maxAge": 86400,
