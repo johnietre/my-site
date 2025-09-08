@@ -47,9 +47,8 @@ var (
 		"admin/blog",
 		"admin/journal",
 		"admin/products",
-		"admin/products-issues", "admin/products-issues-reply",
-		"admin/products-list", "admin/products-list-edit",
 		"admin/site",
+		"admin/api",
 	}
 	tmpls = utils.NewSyncMap[string, *template.Template]()
 
@@ -290,30 +289,10 @@ func getJournalHandler(c *jmux.Context) {
 	execTmplWithExtra("journal", c, data)
 }
 
-// TODO
 func createApiRouter() jmux.Handler {
 	router := jmux.NewRouter()
 	router.All("/", jmux.WrapH(proxy)).MatchAny(jmux.MethodsAll())
-	/*
-	  router.AllFunc("/", func(c *jmux.Context) {
-	    log.Print(c.Path())
-	    proxy.ServeHTTP(c.Writer, c.Request)
-	  }).MatchAny(jmux.MethodsAll())
-	*/
-	srvr := &goryproxy.Server{
-		Name:   "jtgames",
-		Path:   "jtgames",
-		Addr:   "http://127.0.0.1:8888",
-		Hidden: true,
-	}
-	if err := srvr.AddNewProxy("http://127.0.0.1:8888"); err != nil {
-		panic(err)
-	}
-	if err := proxy.AddServer(srvr); err != nil {
-		panic(err)
-	}
 	return jmux.WrapH(http.StripPrefix("/api", proxy))
-	//return router
 }
 
 func createAdminRouter() jmux.Handler {
@@ -348,7 +327,11 @@ func createAdminRouter() jmux.Handler {
 	router.PutFunc("/products/issues/{issue_id}", adminProductsIssueEditHandler)
 
 	router.GetFunc("/site", adminSiteHandler)
-	router.GetFunc("/site/parse", adminSiteParseHandler)
+	router.PostFunc("/site/parse", adminSiteParseHandler)
+
+	router.GetFunc("/api", adminApiHandler)
+	router.PostFunc("/api", adminApiAddHandler)
+	router.DeleteFunc("/api", adminApiDelHandler)
 
 	router.GetFunc("/parse", func(c *jmux.Context) {
 		if parseTemplate(c) {
@@ -361,6 +344,156 @@ func createAdminRouter() jmux.Handler {
 		"/admin",
 		jmux.ToHTTP(adminAuthMiddleware(router)),
 	))
+}
+
+func adminApiHandler(c *jmux.Context) {
+	type Data struct {
+		Servers []*goryproxy.Server `json:"servers"`
+	}
+
+	data := Data{}
+	srvrMap := proxy.GetServers()
+	for _, srvr := range srvrMap {
+		data.Servers = append(data.Servers, srvr)
+	}
+	sort.Slice(data.Servers, func(i, j int) bool {
+		return data.Servers[i].Name < data.Servers[j].Name
+	})
+
+	if c.ReqHeader().Get("Accepts") == "application/json" {
+		c.WriteJSON(data)
+		return
+	}
+	execTmpl("admin/api", c, PageData{
+		Active: "api",
+		Data:   data,
+	})
+}
+
+func proxyServerFromJson(c *jmux.Context) (*goryproxy.Server, error) {
+	srvr := &goryproxy.Server{}
+	return srvr, c.ReadBodyJSON(&srvr)
+}
+
+func proxyServerFromForm(c *jmux.Context) (*goryproxy.Server, error) {
+	srvr := &goryproxy.Server{}
+	req := c.Request
+	err := req.ParseForm()
+	if err != nil {
+		return nil, err
+	}
+	srvr.Name = req.FormValue("name")
+	srvr.Addr = req.FormValue("addr")
+	srvr.Path = req.FormValue("path")
+	srvr.Hidden, err = strconv.ParseBool(req.FormValue("hidden"))
+	return srvr, err
+}
+
+func adminApiAddHandler(c *jmux.Context) {
+	var srvr *goryproxy.Server
+	var err error
+	isJson := c.ReqHeader().Get("Content-Type") == "application/json"
+	if isJson {
+		srvr, err = proxyServerFromJson(c)
+		if err != nil {
+			if utils.IsUnmarshalError(err) {
+				c.WriteError(http.StatusBadRequest, "bad json")
+			} else {
+				c.WriteError(http.StatusInternalServerError, "internal server error")
+				log.Print("error parsing proxy server json: ", err)
+			}
+			return
+		}
+	} else {
+		srvr, err = proxyServerFromForm(c)
+		if err != nil {
+			// TODO: parse form error vs parse bool
+			c.WriteError(http.StatusBadRequest, "bad form")
+			return
+		}
+	}
+	if err := srvr.AddNewProxy(srvr.Addr); err != nil {
+		c.WriteError(http.StatusBadRequest, err.Error())
+	}
+
+	if err := proxy.AddServer(srvr); err != nil {
+		c.WriteError(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	type Data struct {
+		Servers []*goryproxy.Server `json:"servers"`
+	}
+
+	data := Data{}
+	srvrMap := proxy.GetServers()
+	for _, srvr := range srvrMap {
+		data.Servers = append(data.Servers, srvr)
+	}
+	sort.Slice(data.Servers, func(i, j int) bool {
+		return data.Servers[i].Name < data.Servers[j].Name
+	})
+
+	if isJson {
+		c.WriteJSON(data)
+		return
+	}
+	execTmpl("admin/api", c, PageData{
+		Active: "api",
+		Data:   data,
+	})
+}
+
+func adminApiDelHandler(c *jmux.Context) {
+	var srvr *goryproxy.Server
+	var err error
+	isJson := c.ReqHeader().Get("Content-Type") == "application/json"
+	if isJson {
+		srvr, err = proxyServerFromJson(c)
+		if err != nil {
+			if utils.IsUnmarshalError(err) {
+				c.WriteError(http.StatusBadRequest, "bad json")
+			} else {
+				c.WriteError(http.StatusInternalServerError, "internal server error")
+				log.Print("error parsing proxy server json: ", err)
+			}
+			return
+		}
+	} else {
+		srvr, err = proxyServerFromForm(c)
+		if err != nil {
+			// TODO: parse form error vs parse bool
+			c.WriteError(http.StatusBadRequest, "bad form")
+			return
+		}
+	}
+
+	if err := proxy.DeleteServer(srvr); err != nil {
+		c.WriteError(http.StatusBadRequest, err.Error())
+		return
+	}
+
+	type Data struct {
+		Servers []*goryproxy.Server `json:"servers"`
+	}
+
+	data := Data{}
+	srvrMap := proxy.GetServers()
+	for _, srvr := range srvrMap {
+		data.Servers = append(data.Servers, srvr)
+	}
+	sort.Slice(data.Servers, func(i, j int) bool {
+		return data.Servers[i].Name < data.Servers[j].Name
+	})
+
+	if isJson {
+		c.WriteJSON(data)
+		return
+	}
+	execTmpl("admin/api", c, PageData{
+		Active: "api",
+		Data:   data,
+	})
 }
 
 func adminHandler(c *jmux.Context) {

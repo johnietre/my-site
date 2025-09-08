@@ -81,6 +81,14 @@
           <li class="nav-link-item"><a
               class="
               nav-link
+              {{if eq .Active "api"}}nav-link-active{{end}}
+              "
+              href="../admin/api"
+              title="API"
+              >API</a></li>
+          <li class="nav-link-item"><a
+              class="
+              nav-link
               {{if eq .Active "site"}}nav-link-active{{end}}
               "
               href="../admin/site"

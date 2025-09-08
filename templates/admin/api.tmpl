@@ -1,0 +1,142 @@
+{{define "style"}}
+<style>
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+  width: 90vw;
+  max-width: 600px;
+}
+</style>
+{{end}}
+
+{{define "script"}}
+<script src="../static/js/vue.global.js" defer></script>
+<script type="module" defer>
+(function() {
+function newServer() {
+  return {
+    name: "",
+    addr: "",
+    path: "",
+    hidden: true,
+  };
+}
+
+const App = {
+  data() {
+    return {
+      servers: [],
+      newServer: newServer(),
+    };
+  },
+  methods: {
+    async getServers() {
+      const resp = await fetch("../admin/api", {
+        headers: {
+          "Accepts": "application/json",
+        },
+      });
+      if (!resp.ok) {
+        alert(`Got error response (${resp.status}): ${await resp.text()}`);
+        return;
+      }
+      const data = await resp.json();
+      this.servers = data.servers;
+    },
+    async addServer() {
+      if (this.newServer === null) {
+        return;
+      }
+      const resp = await fetch("../admin/api", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(this.newServer),
+      });
+      if (!resp.ok) {
+        alert(`Got error response (${resp.status}): ${await resp.text()}`);
+      } else {
+        this.newServer = newServer();
+      }
+      await this.getServers();
+    },
+    async deleteServer(srvr) {
+      if (typeof srvr === "number") {
+        srvr = this.servers[srvr];
+      }
+      const resp = await fetch("../admin/api", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(srvr),
+      });
+      if (!resp.ok) {
+        alert(`Got error response (${resp.status}): ${await resp.text()}`);
+      }
+      await this.getServers();
+    },
+    resetServer() {
+      this.newServer = newServer();
+    }
+  }
+};
+const app = Vue.createApp(App)
+app.config.compilerOptions.delimiters = ["{|", "|}"];
+app.mount("#api-main");
+})()
+</script>
+{{end}}
+
+{{define "main"}}
+
+<div id="api-main">
+  <form @submit.prevent="addServer">
+    <div>
+      <label for="name">Name</label><br>
+      <input type="text" placeholder="Name" v-model="newServer.name">
+    </div>
+    <div>
+      <label for="addr">URL</label><br>
+      <input type="url" placeholder="URL" v-model="newServer.addr">
+    </div>
+    <div>
+      <label for="path">Path</label><br>
+      <input type="text" placeholder="Path" v-model="newServer.path">
+    </div>
+    <div>
+      <label for="hidden">Hidden: </label>
+      <input type="checkbox" v-model="newServer.hidden">
+    </div>
+    <div>
+      <button type="button" @click="resetServer">Cancel</button>
+      <input type="submit" value="Add">
+    </div>
+  </form>
+
+  <div>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>URL</th>
+          <th>Path</th>
+          <th>Hidden</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="srvr in servers">
+          <td>{|srvr.name|}</td>
+          <td>{|srvr.addr|}</td>
+          <td>{|srvr.path|}</td>
+          <td>{|srvr.hidden|}</td>
+          <td><button @click="deleteServer(srvr)">X</button></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{{end}}

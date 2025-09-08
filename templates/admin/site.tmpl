@@ -1,3 +1,8 @@
+{{define "script"}}
+<script src="../static/js/htmx.min.js" defer></script>
+<script src="../static/js/htmx.response-targets.js" defer></script>
+{{end}}
+
 {{define "main"}}
 <div id="site-parse">
   <h2>Parsing</h2>
@@ -10,6 +15,7 @@
       <option value="{{.}}">{{.}}</option>
       {{end}}
     </select>
+    <br />
     {{end}}
     <input type="submit" value="Parse">
   </form>

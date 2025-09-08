@@ -13,6 +13,8 @@ github.com/johnietre/go-jmux v0.0.0-20241231094248-d4891e13d9d2 h1:npL205mRgQw2I
 github.com/johnietre/go-jmux v0.0.0-20241231094248-d4891e13d9d2/go.mod h1:+rirwe5r7xZqXVdnFSOM1PotCdbNFSaknd6I6AiowFA=
 github.com/johnietre/gory-proxy v0.0.0-20250319213512-1fee43abbf19 h1:xgEMP5xr4TVgnCQ/l3gSuiIU02iFw7Mj+nyWYKs56hk=
 github.com/johnietre/gory-proxy v0.0.0-20250319213512-1fee43abbf19/go.mod h1:hQsdbsvfpGD4OUgYOKSDoWJmLiZHUhrAHHRepcxOWdE=
+github.com/johnietre/gory-proxy v0.0.0-20250908071733-fc6961bb49d8 h1:aV164ap6kZaargDtOMz3wh7H8t/xeX53eArOg7LzveI=
+github.com/johnietre/gory-proxy v0.0.0-20250908071733-fc6961bb49d8/go.mod h1:hQsdbsvfpGD4OUgYOKSDoWJmLiZHUhrAHHRepcxOWdE=
 github.com/johnietre/utils/go v0.0.0-20250218232934-71098e757d4f h1:/btI86+kBCwDJogDzf8YXGsozkuy+PNsu9cLpanmMiE=
 github.com/johnietre/utils/go v0.0.0-20250218232934-71098e757d4f/go.mod h1:EIHQk2LLgdrOzVqAfAAmDOwjQUB+j0lLB22TNRE0Xyk=
 github.com/klauspost/cpuid/v2 v2.2.10 h1:tBs3QSyvjDyFTq3uoc/9xFpCuOsJQFNPiAhYdw2skhE=
