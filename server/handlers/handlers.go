@@ -24,7 +24,6 @@ import (
 	"github.com/johnietre/my-site/server/repos"
 	"github.com/johnietre/my-site/server/sitemap"
 
-	//goryproxy "github.com/johnietre/gory-proxy/server"
 	utils "github.com/johnietre/utils/go"
 )
 
@@ -58,6 +57,10 @@ var (
 	smUrlEntryCreators = utils.NewSyncMap[string, func(sitemap.UrlEntry) sitemap.UrlEntry]()
 
 	proxy = goryproxy.NewRouterHandler()
+
+	// TODO: add to allow static pages to by "dyncamically" added with file, fmt:
+	// slug,path relative to file
+	//otherStaticPages = utils.NewSyncMap[string, string]()
 )
 
 type Config struct {
@@ -100,8 +103,9 @@ func CreateRouter(staticDir string) http.Handler {
 		}
 	}
 
+	baseRouter := createBaseRouter()
+	router.All("/", baseRouter).MatchAny(jmux.MethodsAll())
 	homeRouter := createHomeRouter()
-	router.All("/", homeRouter)
 	router.All("/home", homeRouter)
 
 	router.All("/about", createMeRouter())
@@ -110,14 +114,6 @@ func CreateRouter(staticDir string) http.Handler {
 	router.All("/products", createProductsRouter()).MatchAny(jmux.MethodsAll())
 
 	router.All("/admin/", createAdminRouter()).MatchAny(jmux.MethodsAll())
-	/* TODO: delete?
-	router.GetFunc("/parse", func(c *jmux.Context) {
-		if parseTemplate(c) {
-			http.Redirect(c.Writer, c.Request, "/", http.StatusFound)
-			return
-		}
-	})
-	*/
 
 	router.Get("/privacy", createPolicyHandler("privacy"))
 	router.Get("/terms", createPolicyHandler("terms"))
@@ -126,10 +122,25 @@ func CreateRouter(staticDir string) http.Handler {
 	router.GetFunc("/robots.txt", func(c *jmux.Context) {
 		c.WriteFile(filepath.Join(staticDir, "robots.txt"))
 	})
+	router.GetFunc("/app-ads.txt", func(c *jmux.Context) {
+		c.WriteFile(filepath.Join(staticDir, "app-ads.txt"))
+	})
 	router.All("/sitemap/", createSitemapRouter()).MatchAny(jmux.MethodsAll())
 
 	router.All("/api/", createApiRouter()).MatchAny(jmux.MethodsAll())
 
+	return router
+}
+
+func createBaseRouter() jmux.Handler {
+	router := jmux.NewRouter()
+	router.GetFunc("/", func(c *jmux.Context) {
+		path := cleanPath(c.Path())
+		if path == "" {
+			homeHandler(c)
+			return
+		}
+	}).MatchAny(jmux.MethodsGet())
 	return router
 }
 
