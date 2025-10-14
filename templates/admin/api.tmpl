@@ -29,6 +29,9 @@ const App = {
       newServer: newServer(),
     };
   },
+  mounted() {
+    this.getServers();
+  },
   methods: {
     async getServers() {
       const resp = await fetch("../admin/api", {

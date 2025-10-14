@@ -81,6 +81,11 @@ func makeRunCmd() *cobra.Command {
 		"tmpls-dir", "$(base-dir)/templates", "Path to templates directory",
 	)
 	flags.String(
+		"proxy-servers-path",
+		"$(base-dir)/ignored/proxy-severs.json",
+		"Path to file for saving proxy servers",
+	)
+	flags.String(
 		"extra-html-head",
 		"", "Optional path to file to append extra HTML to <head> from",
 	)
@@ -124,6 +129,7 @@ func run(cmd *cobra.Command, args []string) {
 	staticDir := utils.Must(flags.GetString("static-dir"))
 	blogsDir := utils.Must(flags.GetString("blogs-dir"))
 	tmplsDir := utils.Must(flags.GetString("tmpls-dir"))
+	proxyServersPath := utils.Must(flags.GetString("proxy-servers-path"))
 	extraHtmlHeadPath := utils.Must(flags.GetString("extra-html-head"))
 	extraHtmlBodyPath := utils.Must(flags.GetString("extra-html-body"))
 
@@ -166,6 +172,7 @@ func run(cmd *cobra.Command, args []string) {
 	replacePath(&blogsDir, "$(base-dir)/", baseDir)
 	replacePath(&blogsDbPath, "$(base-dir)/", baseDir)
 	replacePath(&tmplsDir, "$(base-dir)/", baseDir)
+	replacePath(&proxyServersPath, "$(base-dir)/", baseDir)
 
 	adminConfig := handlers.AdminConfig{}
 	f, err := os.Open(adminConfigPath)
@@ -179,9 +186,10 @@ func run(cmd *cobra.Command, args []string) {
 	}
 
 	handlersConfig := handlers.Config{
-		TmplsDirPath: tmplsDir,
-		RemoteIP:     remoteIP,
-		AdminConfig:  adminConfig,
+		ProxyServersPath: proxyServersPath,
+		TmplsDirPath:     tmplsDir,
+		RemoteIP:         remoteIP,
+		AdminConfig:      adminConfig,
 	}
 	if extraHtmlHeadPath != "" {
 		handlersConfig.ExtraHtmlHeadPath = utils.NewT(extraHtmlHeadPath)

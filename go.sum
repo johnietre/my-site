@@ -15,6 +15,8 @@ github.com/johnietre/gory-proxy v0.0.0-20250319213512-1fee43abbf19 h1:xgEMP5xr4T
 github.com/johnietre/gory-proxy v0.0.0-20250319213512-1fee43abbf19/go.mod h1:hQsdbsvfpGD4OUgYOKSDoWJmLiZHUhrAHHRepcxOWdE=
 github.com/johnietre/gory-proxy v0.0.0-20250908071733-fc6961bb49d8 h1:aV164ap6kZaargDtOMz3wh7H8t/xeX53eArOg7LzveI=
 github.com/johnietre/gory-proxy v0.0.0-20250908071733-fc6961bb49d8/go.mod h1:hQsdbsvfpGD4OUgYOKSDoWJmLiZHUhrAHHRepcxOWdE=
+github.com/johnietre/gory-proxy v0.0.0-20251014200633-ba192c57ee9f h1:fSQhSHx1mrhL1gM0QH0WLLzggkitOLwo1Tz+0ToSUQA=
+github.com/johnietre/gory-proxy v0.0.0-20251014200633-ba192c57ee9f/go.mod h1:hQsdbsvfpGD4OUgYOKSDoWJmLiZHUhrAHHRepcxOWdE=
 github.com/johnietre/utils/go v0.0.0-20250218232934-71098e757d4f h1:/btI86+kBCwDJogDzf8YXGsozkuy+PNsu9cLpanmMiE=
 github.com/johnietre/utils/go v0.0.0-20250218232934-71098e757d4f/go.mod h1:EIHQk2LLgdrOzVqAfAAmDOwjQUB+j0lLB22TNRE0Xyk=
 github.com/klauspost/cpuid/v2 v2.2.10 h1:tBs3QSyvjDyFTq3uoc/9xFpCuOsJQFNPiAhYdw2skhE=

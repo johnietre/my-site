@@ -2,6 +2,7 @@
 package handlers
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"html/template"
@@ -18,12 +19,12 @@ import (
 
 	jwt "github.com/golang-jwt/jwt/v5"
 	jmux "github.com/johnietre/go-jmux"
+	"github.com/johnietre/gory-proxy"
 	"github.com/johnietre/my-site/server/blogs"
-	"github.com/johnietre/my-site/server/gory-proxy"
+	//"github.com/johnietre/my-site/server/gory-proxy"
 	"github.com/johnietre/my-site/server/products"
 	"github.com/johnietre/my-site/server/repos"
 	"github.com/johnietre/my-site/server/sitemap"
-
 	utils "github.com/johnietre/utils/go"
 )
 
@@ -64,6 +65,7 @@ var (
 )
 
 type Config struct {
+	ProxyServersPath  string
 	TmplsDirPath      string
 	RemoteIP          string
 	AdminConfig       AdminConfig
@@ -83,6 +85,38 @@ func InitHandlers(config Config) error {
 			return err
 		}
 	}
+	b, err := os.ReadFile(config.ProxyServersPath)
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return err
+		}
+		log.Printf(
+			"proxy servers file %s doesn't exist, starting fresh",
+			config.ProxyServersPath,
+		)
+	} else {
+		srvrs := map[string]*goryproxy.Server{}
+		if err := json.Unmarshal(b, &srvrs); err != nil {
+			return err
+		}
+		for name, srvr := range srvrs {
+			err := srvr.AddNewProxyFromAddr()
+			if err != nil {
+				return fmt.Errorf("error creating server (%s) proxy: %v", name, err)
+			}
+		}
+		errs, err := proxy.AddServers(srvrs)
+		if err != nil {
+			return fmt.Errorf("error saving servers (or something): %v", err)
+		}
+		for srvr, err := range errs {
+			if err != nil {
+				return fmt.Errorf("error adding server (%s): %v", srvr.Name, err)
+			}
+		}
+		log.Printf("loaded %d proxy server(s)", len(srvrs))
+	}
+	proxy.SaveOnChangeTo(config.ProxyServersPath)
 	return nil
 }
 
@@ -127,7 +161,8 @@ func CreateRouter(staticDir string) http.Handler {
 	})
 	router.All("/sitemap/", createSitemapRouter()).MatchAny(jmux.MethodsAll())
 
-	router.All("/api/", createApiRouter()).MatchAny(jmux.MethodsAll())
+	apiRouter := createApiRouter()
+	router.All("/api/", apiRouter).MatchAny(jmux.MethodsAll())
 
 	return router
 }
@@ -301,8 +336,13 @@ func getJournalHandler(c *jmux.Context) {
 }
 
 func createApiRouter() jmux.Handler {
-	router := jmux.NewRouter()
-	router.All("/", jmux.WrapH(proxy)).MatchAny(jmux.MethodsAll())
+	/*
+		router := jmux.NewRouter()
+	  router.AllFunc("/", func(c *jmux.Context) {
+	    proxy.ServeHTTP(c.Writer, c.Request)
+	  }).MatchAny(jmux.MethodsAll())
+		//router.All("/", jmux.WrapH(proxy)).MatchAny(jmux.MethodsAll())
+	*/
 	return jmux.WrapH(http.StripPrefix("/api", proxy))
 }
 
