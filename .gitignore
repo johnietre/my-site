@@ -3,6 +3,7 @@
 *.log
 /bin
 /ignored
+/static/images/products
 
 *.crt
 *.csr

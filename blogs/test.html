@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+
+<html lang="en-US">
+
+<head>
+  <title>Test</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+#editor {
+  postion: absolute;
+  width: 500px;
+  height: 400px;
+}
+</style>
+</head>
+
+<body>
+  <div id="editor">LaTeX</div>
+  <script src="../static/js/ace-builds/src-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+  <script>
+    const editor = ace.edit("editor");
+    editor.session.setMode("ace/mode/latex");
+  </script>
+</body>
+
+</html>

@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -21,6 +22,7 @@ import (
 	jmux "github.com/johnietre/go-jmux"
 	"github.com/johnietre/gory-proxy"
 	"github.com/johnietre/my-site/server/blogs"
+
 	//"github.com/johnietre/my-site/server/gory-proxy"
 	"github.com/johnietre/my-site/server/products"
 	"github.com/johnietre/my-site/server/repos"
@@ -364,7 +366,15 @@ func createAdminRouter() jmux.Handler {
 	router.GetFunc("/", adminHandler)
 	router.GetFunc("/home", adminHomeHandler)
 	router.GetFunc("/about", adminMeHandler)
+
 	router.GetFunc("/blog", adminBlogHandler)
+  router.GetFunc("/blog/blogs", adminBlogBlogsHandler)
+  router.PostFunc("/blog/blogs", adminBlogNewHandler)
+  router.PostFunc("/blog/blogs/0", adminBlogNewHandler)
+  router.PostFunc("/blog/blogs/{blog_id}", adminBlogEditHandler)
+  router.DeleteFunc("/blog/blogs/{blog_id}", adminBlogDeleteHandler)
+  router.PostFunc("/blog/preview", adminBlogPreviewHandler)
+
 	router.GetFunc("/journal", adminJournalHandler)
 
 	router.GetFunc("/products", adminProductsHandler)
@@ -604,6 +614,39 @@ func adminMeHandler(c *jmux.Context) {
 
 func adminBlogHandler(c *jmux.Context) {
 	execTmpl("admin/blog", c, PageData{Active: "blog"})
+}
+
+var previewMtx = utils.NewMutex(utils.Unit{})
+
+func adminBlogPreviewHandler(c *jmux.Context) {
+  previewMtx.Lock()
+  defer previewMtx.Unlock()
+
+  cmd := exec.Command("pandoc", "-f", "latex", "-w", "html")
+  cmd.Stdin = c.Request.Body
+  out, err := cmd.CombinedOutput()
+  if err != nil {
+    log.Print("error generating preview from pandoc: ", err)
+    log.Print("pandoc preview output: ", string(out))
+    c.WriteError(
+      http.StatusInternalServerError,
+      fmt.Sprint("error generating preview: ", err),
+    )
+    return
+  }
+  c.Write(out)
+}
+
+func adminBlogBlogsHandler(c *jmux.Context) {
+}
+
+func adminBlogNewHandler(c *jmux.Context) {
+}
+
+func adminBlogEditHandler(c *jmux.Context) {
+}
+
+func adminBlogDeleteHandler(c *jmux.Context) {
 }
 
 func adminJournalHandler(c *jmux.Context) {

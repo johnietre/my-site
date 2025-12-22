@@ -1,8 +1,50 @@
+{{define "style"}}
+<style>
+#editor-container {
+  width: 95vw;
+  height: 95vh;
+}
+#editor {
+  position: relative;
+  top: 5%;
+  /*left: 50%;*/
+  /*
+  width: 100%;
+  height: 100%;
+  */
+  width: 90%;
+  height: 90%;
+}
+</style>
+{{end}}
+
+{{define "script"}}
+<script src="../static/js/vue.global.js" defer></script>
+<script src="../static/js/ace-builds/src-noconflict/ace.js" type="text/javascript" charset="utf-8" defer></script>
+<script src="../static/js/admin/blog.js" type="module" defer></script>
+
+{{end}}
+
 {{define "main"}}
-<div>
-  <div>
-    <div id="editor" contenteditable></div>
-    <iframe id="preview" hidden></iframe>
+<div id="app">
+
+  <div id="editor-container">
+    <div>
+      <h1 v-if="showingEditor">Editing</h1>
+      <h1 v-else>Preview</h1>
+      <div id="switch-editor">
+        <button v-if="showingEditor" @click="switchEditor()">Preview</button>
+        <button v-else @click="switchEditor()">Edit</button>
+      </div>
+    </div>
+    <div id="editor" :hidden="!showingEditor">Editors</div>
+    <div id="preview" :hidden="showingEditor"></div>
   </div>
+
 </div>
+<component is="script" type="module">
+const editor = ace.edit("editor");
+editor.session.setMode("ace/mode/latex");
+window.editor = editor;
+</component>
 {{end}}

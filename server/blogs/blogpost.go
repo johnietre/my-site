@@ -1,6 +1,9 @@
 package blogs
 
 import (
+	"crypto/sha256"
+	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"os"
@@ -10,6 +13,8 @@ import (
 	utils "github.com/johnietre/utils/go"
 )
 
+const initialHash = "0000000000000000000000000000000000000000000000000000000000000000"
+
 func AddBlog(blog *Blog, content io.Reader) error {
 	// TODO: add blog to database
 	//f, err := os.Create(blogPath)
@@ -18,8 +23,16 @@ func AddBlog(blog *Blog, content io.Reader) error {
 		return err
 	}
 	defer f.Close()
-	io.TeeReader(content, f)
-	// TODO: add edit
+  blog.Edits = []Edit{
+    {
+      Description: "GENESIS",
+      PrevHash: initialHash,
+    },
+  }
+  blog.Edits[0].Hash, err = blog.Hash(io.TeeReader(content, f))
+  if err != nil {
+    return err
+  }
 	return nil
 }
 
@@ -44,6 +57,47 @@ type Blog struct {
 	// Seconds
 	TzOffset int    `json:"tzOffset"`
 	Edits    []Edit `json:"edits"`
+}
+
+func (b *Blog) Hash(content io.Reader) (string, error) {
+  toWrite := utils.NewSlice[[]byte](nil)
+
+  hash := sha256.New()
+  toWrite.PushBack([]byte(b.Title))
+  if len(b.Authors) != 0 {
+    toWrite.PushBack([]byte(b.Authors[0]))
+    for i := 1; i < len(b.Authors); i++ {
+      toWrite.PushBack([]byte("\n"))
+      toWrite.PushBack([]byte(b.Authors[i]))
+    }
+  }
+  if len(b.Categories) != 0 {
+    toWrite.PushBack([]byte(b.Categories[0]))
+    for i := 1; i < len(b.Categories); i++ {
+      toWrite.PushBack([]byte("\n"))
+      toWrite.PushBack([]byte(b.Categories[i]))
+    }
+  }
+  toWrite.PushBack(binary.BigEndian.AppendUint64(nil, uint64(b.Timestamp)))
+  toWrite.PushBack(binary.BigEndian.AppendUint32(nil, uint32(b.TzOffset)))
+  switch l := len(b.Edits); l {
+  case 0:
+    return "", fmt.Errorf("must have at least one edit")
+  case 1:
+    // Is initial/genesis
+    toWrite.PushBack([]byte(b.Edits[0].PrevHash))
+  default:
+    toWrite.PushBack([]byte(b.Edits[l].Hash))
+  }
+  for _, b := range *toWrite.Ptr {
+    if _, err := hash.Write(b); err != nil {
+      return "", err
+    }
+  }
+  if _, err  := io.Copy(hash, content); err != nil {
+    return "", err
+  }
+  return hex.Dump(hash.Sum(nil)), nil
 }
 
 func parseBlogAuthors(s string) ([]string, bool) {
@@ -148,6 +202,7 @@ func (b Blog) FormatTimestamp() string {
 }
 
 type Edit struct {
+  Id int64 `json:"id"`
 	BlogId      int64  `json:"blogId"`
 	Description string `json:"description"`
 	// Second-precision
