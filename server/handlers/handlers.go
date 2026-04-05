@@ -145,8 +145,10 @@ func CreateRouter(staticDir string) http.Handler {
 	router.All("/home", homeRouter)
 
 	router.All("/about", createMeRouter())
-	router.All("/blog", createBlogRouter())
-	router.All("/journal", createJournalRouter())
+	if hasBlog {
+		router.All("/blog", createBlogRouter())
+		router.All("/journal", createJournalRouter())
+	}
 	router.All("/products", createProductsRouter()).MatchAny(jmux.MethodsAll())
 
 	router.All("/admin/", createAdminRouter()).MatchAny(jmux.MethodsAll())
@@ -950,6 +952,8 @@ func adminSiteParseHandler(c *jmux.Context) {
 }
 
 const (
+	// todo: remove when the time comes
+	hasBlog = false
 	adminJwtIssuer = "https://johnietre.com/admin"
 )
 
@@ -1271,6 +1275,7 @@ func cleanPath(path string) string {
 
 type PageData struct {
 	Active        string
+	HasBlog bool
 	Data          any
 	ExtraHtmlHead template.HTML
 	ExtraHtmlBody template.HTML

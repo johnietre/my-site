@@ -338,6 +338,7 @@ func RunServer(
 	if cfg.CertPath != "" || cfg.KeyPath != "" {
 		err = httpsSrvr.ServeTLS(httpsLn, cfg.CertPath, cfg.KeyPath)
 	} else {
+		// TODO: fix
 		if httpsSrvr != nil {
 			err = httpsSrvr.Serve(httpsLn)
 		}

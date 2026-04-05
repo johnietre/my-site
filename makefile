@@ -1,4 +1,4 @@
 .PHONY: go
 
 go: cmd/my-site/main.go
-	go build -o bin/my-site $^
+	CGO_ENABLED=1 go build -o bin/my-site $^
