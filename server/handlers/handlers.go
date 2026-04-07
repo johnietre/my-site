@@ -341,11 +341,11 @@ func getJournalHandler(c *jmux.Context) {
 
 func createApiRouter() jmux.Handler {
 	/*
-		router := jmux.NewRouter()
-	  router.AllFunc("/", func(c *jmux.Context) {
-	    proxy.ServeHTTP(c.Writer, c.Request)
-	  }).MatchAny(jmux.MethodsAll())
-		//router.All("/", jmux.WrapH(proxy)).MatchAny(jmux.MethodsAll())
+			router := jmux.NewRouter()
+		  router.AllFunc("/", func(c *jmux.Context) {
+		    proxy.ServeHTTP(c.Writer, c.Request)
+		  }).MatchAny(jmux.MethodsAll())
+			//router.All("/", jmux.WrapH(proxy)).MatchAny(jmux.MethodsAll())
 	*/
 	return jmux.WrapH(http.StripPrefix("/api", proxy))
 }
@@ -370,12 +370,12 @@ func createAdminRouter() jmux.Handler {
 	router.GetFunc("/about", adminMeHandler)
 
 	router.GetFunc("/blog", adminBlogHandler)
-  router.GetFunc("/blog/blogs", adminBlogBlogsHandler)
-  router.PostFunc("/blog/blogs", adminBlogNewHandler)
-  router.PostFunc("/blog/blogs/0", adminBlogNewHandler)
-  router.PostFunc("/blog/blogs/{blog_id}", adminBlogEditHandler)
-  router.DeleteFunc("/blog/blogs/{blog_id}", adminBlogDeleteHandler)
-  router.PostFunc("/blog/preview", adminBlogPreviewHandler)
+	router.GetFunc("/blog/blogs", adminBlogBlogsHandler)
+	router.PostFunc("/blog/blogs", adminBlogNewHandler)
+	router.PostFunc("/blog/blogs/0", adminBlogNewHandler)
+	router.PostFunc("/blog/blogs/{blog_id}", adminBlogEditHandler)
+	router.DeleteFunc("/blog/blogs/{blog_id}", adminBlogDeleteHandler)
+	router.PostFunc("/blog/preview", adminBlogPreviewHandler)
 
 	router.GetFunc("/journal", adminJournalHandler)
 
@@ -621,22 +621,22 @@ func adminBlogHandler(c *jmux.Context) {
 var previewMtx = utils.NewMutex(utils.Unit{})
 
 func adminBlogPreviewHandler(c *jmux.Context) {
-  previewMtx.Lock()
-  defer previewMtx.Unlock()
+	previewMtx.Lock()
+	defer previewMtx.Unlock()
 
-  cmd := exec.Command("pandoc", "-f", "latex", "-w", "html")
-  cmd.Stdin = c.Request.Body
-  out, err := cmd.CombinedOutput()
-  if err != nil {
-    log.Print("error generating preview from pandoc: ", err)
-    log.Print("pandoc preview output: ", string(out))
-    c.WriteError(
-      http.StatusInternalServerError,
-      fmt.Sprint("error generating preview: ", err),
-    )
-    return
-  }
-  c.Write(out)
+	cmd := exec.Command("pandoc", "-f", "latex", "-w", "html")
+	cmd.Stdin = c.Request.Body
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		log.Print("error generating preview from pandoc: ", err)
+		log.Print("pandoc preview output: ", string(out))
+		c.WriteError(
+			http.StatusInternalServerError,
+			fmt.Sprint("error generating preview: ", err),
+		)
+		return
+	}
+	c.Write(out)
 }
 
 func adminBlogBlogsHandler(c *jmux.Context) {
@@ -953,7 +953,7 @@ func adminSiteParseHandler(c *jmux.Context) {
 
 const (
 	// todo: remove when the time comes
-	hasBlog = false
+	hasBlog        = false
 	adminJwtIssuer = "https://johnietre.com/admin"
 )
 
@@ -1275,7 +1275,7 @@ func cleanPath(path string) string {
 
 type PageData struct {
 	Active        string
-	HasBlog bool
+	HasBlog       bool
 	Data          any
 	ExtraHtmlHead template.HTML
 	ExtraHtmlBody template.HTML

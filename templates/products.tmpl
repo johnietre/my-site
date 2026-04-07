@@ -27,30 +27,41 @@
       <h3>{{.Name}}</h3>
       {{end}}
     </div>
+    <div class="products-product-card-content">
+      <div class="products-product-card-links">
+        {{if .AppStoreLink}}
+        <a class="products-product-card-store-link" href={{.AppStoreLink}}>
+          <img
+            src="./static/images/appstore/dotas.svg"
+            alt="Download on the App Store"
+            height="50"
+          />
+        </a>
+        {{end}}
+        {{if .PlayStoreLink}}
+        <a class="products-product-card-store-link" href={{.PlayStoreLink}}>
+          <img
+            src="./static/images/googleplay/giogp.png"
+            height="50"
+            alt="GET IT ON Google Play"
+          />
+        </a>
+        {{end}}
+      </div>
+      <div class="products-product-card-description">
+        <p>{{.Description}}</p>
+      </div>
+      <div>
+        {{if eq .PlayStoreLink "johnie"}}
+        <img
+          class="products-product-card-image"
+        >
+        {{else}}
+        <p style="text-align:center">No images available.</p>
+        {{end}}
+      </div>
+    </div>
     <div class="spacer"></div>
-    <div class="products-product-card-description">
-      <p>{{.Description}}</p>
-    </div>
-    <div class="products-product-card-links">
-      {{if .AppStoreLink}}
-      <a class="products-product-card-store-link" href={{.AppStoreLink}}>
-        <img
-          src="./static/images/appstore/dotas.svg"
-          alt="Download on the App Store"
-          height="50"
-        />
-      </a>
-      {{end}}
-      {{if .PlayStoreLink}}
-      <a class="products-product-card-store-link" href={{.PlayStoreLink}}>
-        <img
-          src="./static/images/googleplay/giogp.png"
-          height="50"
-          alt="GET IT ON Google Play"
-        />
-      </a>
-      {{end}}
-    </div>
     <div class="products-product-card-feedback">
       <button
         class="products-product-card-feedback-button"

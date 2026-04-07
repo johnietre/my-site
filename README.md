@@ -39,6 +39,7 @@ If, on the REMOTE chance, a rehash is required, increment the timestamp.
 - [ ] Option to pass config file with CLI opts
 - [ ] Request tracking/logging
 - [ ] Make robots.txt requests to APIs to add to overall robots.txt
+- [ ] Merge instances of "style" and "script" into "head" block in templates
 
 
 # todo

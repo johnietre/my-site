@@ -56,6 +56,10 @@
   cursor: pointer;
 }
 
+.products-product-card-content {
+  overflow-y: auto;
+}
+
 #products-review-form {
   display: grid;
   grid-template-rows: 1fr 1fr 1fr 3fr;
@@ -145,7 +149,8 @@
   .products-product-card {
     width: 45vw;
     aspect-ratio: 1;
-    overflow: scroll;
+    /*overflow: scroll;*/
+    overflow: auto;
     max-width: 400px;
   }
 }
