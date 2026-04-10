@@ -24,8 +24,8 @@ const App = {
       document.querySelector("#preview").innerHTML = text;
       this.showingEditor = false;
     },
-    __blank() {}
-  }
+    __blank() {},
+  },
 };
 const app = Vue.createApp(App);
 app.mount("#app");

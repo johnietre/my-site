@@ -290,6 +290,20 @@ app.mount("#products-main");
     <label for="play-store-link">Play Store Link:</label>
     <input type="url" name="play-store-link" placeholder="Play Store Link" v-model="currProduct.playStoreLink" :disabled="!editingProduct"/>
   </div>
+  <!--
+  <div>
+    <label for="image">Image:</label>
+    <input type="file" name="image" accept="jpg,jpeg,png,webp" :disabled="!editingProduct" />
+    <p>Preview:</p>
+    <div v-if="currProduct.image">
+      <img
+        width="350"
+        :src="currProduct.image.data"
+        alt="currProduct.image.alt"
+      />
+    </div>
+  </div>
+  -->
   <div>
     <label for="hidden">Hidden</label>
     <input type="checkbox" name="hidden" v-model="currProduct.hidden" :disabled="!editingProduct"/>

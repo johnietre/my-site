@@ -4,15 +4,15 @@
 
 {{define "main"}}
 
-<main id="content">
+<main class="main">
 <article>
-  <h1 id="about-name-header">Johnie "Tre" Rodgers</h1>
+  <h1 class="about-name-header">About Me</h1>
 
   <section>
-    <div id="about-who-i-am">
+    <div class="about-who-i-am">
       <div style="flex:1;margin-left:10">
+        <h2 class="about-section-title">Who Is Johnie "Tre" Rodgers?</h2>
         <p>
-        <h2 class="about-section-title">Who I Am</h2>
         I am Johnie Rodgers III (nicknamed Tre).
 
         I was born and raised in Dallas, graduating from Southern Methodist University (SMU) in 2023
@@ -26,7 +26,7 @@
         school and really got into it a few months later, starting with Swift.
 
         After about a month, I took an extended break from Swift and took to
-        learning Python for a few months, then C, C++ and Go. Finally, after
+        learning Python for a few months, then C, C++, and Go. Finally, after
         years of trying out various languages and projects, I have found myself
         favoring GoLang and Rust for the backend.
 
@@ -40,10 +40,13 @@
         specifically dealing with either financial assets and trading or
         psychology whether it be an app, fintech company, or the likes.
         </p>
+        <div style="width:100%;display:flex;align-items:center;flex-direction:column">
+          <a href="./resume.pdf" class="button" target="_blank">Resume</a>
+        </div>
       </div>
-      <div>
+      <div class="about-me-img-container">
         <img
-        id="about-me-img"
+        class="about-me-img"
         src="./static/images/me.jpg"
         alt="It's an old photo of me."
         title="It's an old photo of me."
@@ -53,34 +56,37 @@
   </section>
 
   <section>
-    <div id="about-other-info">
+    <div class="about-other-info">
       <h2 class="about-section-title">Other Info</h2>
       <div class="about-other-info-content">
         <div>
-        <p id="about-auto-bio-tldr">
-        <br>
-        <b>Primary Programming Languages/Technologies</b>
+        <h3>Primary Technologies</h3>
         <ul>
           <li>GoLang</li>
           <li>TypeScript</li>
+          <li>Rust</li>
           <li>Python</li>
           <li>React Native (Expo)</li>
         </ul>
-        <b>Other Programming Languages/Technologies</b>
+        <h3>Other Technologies</h3>
         <ul>
-          <li>Rust</li>
           <li>HTML</li>
           <li>CSS</li>
           <li>JavaScript</li>
           <li>C++</li>
           <li>C</li>
         </ul>
-        </p>
         </div>
         <div>
+        <h3>More Fun Facts</h3>
         <p>
-        <b>More Fun Facts</b>
         I deeply enjoy music, whether it be playing piano (or other tonal percussion instruments), singing, or listening to a smorgasbord of genres. I also spend a lot (daresay too much) time playing online chess as well as a decent amount roller skating and playing billiards.
+        </p>
+        <p>
+        I am always looking for new music to play/listen to so, especially those that are "groovy" or "chill". Any recommendations fitting the bill (or even those far from it) are much appreciated! My playlists are dominated by R&amp;B (incl. Korean R&amp;B), City Pop, Jazz, Indie, Alternative, and Salsa. Additionally, any piano works that are wistful, flowing, and/or emotional pieces, like Leibstraum No. 3 (Liszt) or Jeux D'Eau (Ravel), would be woderful.
+        </p>
+        <p>
+        As a result of my general dislike of being on social media I only have a seldom-used Facebook (and LinkedIn).
         </p>
         </div>
       </div>

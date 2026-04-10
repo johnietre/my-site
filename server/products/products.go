@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"log"
+	"math/rand/v2"
 	"os"
 	"path/filepath"
 	"time"
@@ -150,6 +151,14 @@ func NewProductsPageData() ProductsPageData {
 	return productsPageData.Load()
 }
 
+func GetRandomProducts(n int) []Product {
+	prods := productsPageData.Load().Products
+	res := make([]Product, min(len(prods), n))
+	copy(res, prods)
+	rand.Shuffle(len(res), func(i, j int) { res[i], res[j] = res[j], res[i] })
+	return res
+}
+
 type Product struct {
 	Id            uint64 `json:"id,omitempty"`
 	Name          string `json:"name"`
@@ -158,6 +167,14 @@ type Product struct {
 	AppStoreLink  string `json:"appStoreLink,omitempty"`
 	PlayStoreLink string `json:"playStoreLink,omitempty"`
 	// TODO
-	Images []string `json:"images,omitempty"`
-	Hidden bool     `json:"hidden,omitempty"`
+	//Images []string `json:"images,omitempty"`
+	Image  *Image `json:"image,omitempty"`
+	Hidden bool   `json:"hidden,omitempty"`
+}
+
+// TODO
+type Image struct {
+	Data   string `json:"data"`
+	Format string `json:"format"`
+	Alt    string `json:"alt"`
 }

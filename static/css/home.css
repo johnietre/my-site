@@ -1,55 +1,100 @@
-#main {
+.main {
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-#repos-repos-div {
+.home-header {
+  margin-bottom: 0;
+}
+
+.home-tldr {
+  width: 90%;
+  margin: auto;
+  display: flex;
+  flex-direction: column;
+  /*justify-content: center;*/
+  align-items: center;
+  /*
+  flex-direction: row;
+  justify-content: center;
+  */
+  gap: 10px;
+}
+
+.home-tldr-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.home-tldr-subsection {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.home-tldr-button {
+  width: 100px;
+  padding: 10px;
+  font-size: 20px;
+}
+
+.home-repos-div {
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-#repos-repos {
+.home-item-cards {
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-.repos-repo {
+.home-item-card {
   display: flex;
   flex-direction: column;
   /*justify-content: space-between;*/
   align-items: center;
   width: 350px;
-  height: 350px;
+  /*height: 175px;*/
+  aspect-ratio: 2 / 1;
   overflow-y: auto;
-  margin: 5px;
+  margin: 7px;
   padding: 10px;
-  /*border: 1px solid var(--border-color);*/
-  border: 1px solid black;
-  border-radius: 10px;
 }
 
-.test-dir {
-  background-color: green;
-  height: 450px;
-  width: 300px;
+.home-item-card-title {
+  font-size: 1.5em;
+  margin: 5px;
 }
 
-.repos-repo-title {
-  font-size: 2em;
-}
-
-.repos-repo-description {
+.home-item-card-description {
   text-align: center;
+  text-overflow: ellipsis;
+}
+
+.home-product {
+  height: 100px;
+  overflow: hidden;
+}
+
+.home-product-description {
+  font-size: 1em;
+  text-overflow: ellipsis;
+}
+
+.home-repos {
+  margin-bottom: 10px;
 }
 
 @media (min-width: 780px) {
-
-  #repos-repos {
+  .home-repos {
     display: flex;
     flex-direction: row;
     justify-content: center;
@@ -58,8 +103,13 @@
     /*width: 100vw;*/
   }
 
+  .home-tldr {
+    flex-direction: row;
+    align-items: unset;
+  }
+
   /*
-  #repos > div:not(:first-child) {
+  .repos > div:not(:first-child) {
     border-left: 1px solid black;
   }
   */

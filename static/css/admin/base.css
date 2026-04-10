@@ -13,7 +13,8 @@ h2 {
   text-align: center;
 }
 
-#app, #main {
+#app,
+.main-container {
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -50,7 +51,7 @@ h2 {
   background-color: #025252;
 }
 
-#base-nav-bar-logout {
+.base-nav-bar-logout {
   cursor: pointer;
   float: right;
 }

@@ -19,7 +19,7 @@
 <body>
 <div id="app">
 
-  <nav id="nav-bar">
+  <nav class="nav-bar">
     <div class="nav-bar-content">
       <div class="nav-bar-logo">
         <a href="./home" title="Home">
@@ -27,15 +27,19 @@
         </a>
       </div>
       <div class="nav-bar-spacer" style="flex:1"></div>
-      <div class="nav-dark-light-toggle">
+      <div class="nav-bar-theme-toggle">
         <button
-          id="dark-light-toggle-button"
+          class="nav-bar-theme-toggle-button"
           title="Change Theme" onclick="cycleTheme()"
         >
-          <span id="dark-light-toggle-icon" class="fa fa-lg"></span>
+          <span
+            id="nav-bar-theme-toggle-icon"
+            class="fa fa-lg nav-bar-theme-toggle-icon"
+            >
+          </span>
         </button>
       </div>
-      <div id="nav-bar-full">
+      <div class="nav-bar-full">
         <ul class="nav-links">
           <li class="nav-link-item"><a
               class="
@@ -81,10 +85,11 @@
               title="Products"
               >Products</a></li>
         </ul>
+        <!-- TODO
         <div class="nav-bar-search">
           <button onclick="cycleSearch()" class="search-button">
             <svg
-              id="search-icon"
+              class="search-icon"
               xmlns="http://www.w3.org/2000/svg"
               width="40" height="40"
               viewbox="0 0 100 100" fill="none">
@@ -93,9 +98,10 @@
             </svg>
           </button>
         </div>
+        -->
       </div>
 
-      <div id="nav-bar-mini">
+      <div class="nav-bar-mini">
         <div class="nav-bar-burger-container">
           <button
             onclick="toggleMiniPopup()"
@@ -125,14 +131,14 @@
     </div>
   </nav>
 
-  <div id="nav-mini-popup" hidden>
+  <div id="nav-mini-popup" class="nav-mini-popup" hidden>
     <ul class="nav-links">
       <li class="nav-link-item nav-mini-search-container">
         <input
-          id="nav-mini-search-input" type="search"
-          placeholder="Apologies, not yet implemented :(" size="40"
+          id="nav-mini-search-input" class="nav-mini-search-input"
+          type="search" placeholder="Apologies, not yet implemented :(" size="40"
           hidden disabled/>
-        <button id="nav-mini-search-button" class="search-button" onclick="doNavMiniSearch()">
+        <button class="nav-mini-search-button" class="search-button" onclick="doNavMiniSearch()">
           <svg
             class="search-icon"
             xmlns="http://www.w3.org/2000/svg"
@@ -142,7 +148,10 @@
             <line x1="57.678" x2="80" y1="57.678" y2="80" stroke="black" stroke-width="6"/>
           </svg>
         </button>
-        <button id="nav-mini-search-cancel" onclick="cancelNavMiniSearch()" hidden>
+        <button
+          id="nav-mini-search-cancel" class="nav-mini-search-cancel"
+          onclick="cancelNavMiniSearch()" hidden
+        >
           <svg
             class="search-icon"
             xmlns="http://www.w3.org/2000/svg"
@@ -197,14 +206,14 @@
     </ul>
   </div>
 
-  <div id="main">
+  <div class="main-container">
   {{template "main" .}}
   </div>
 
-  <footer id="footer">
-    <div id="footer-content">
-      <div id="copyright">© 2023 - 2026 JohnieTre</div>
-      <div id="footer-links">
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="copyright">© 2023 - 2026 JohnieTre</div>
+      <div class="footer-links">
         <div class="nav-link-item footer-link-item">
           <a
             class="
@@ -261,7 +270,7 @@
           >Disclaimer</a>
         </div>
       </div>
-      <div id="social-links">
+      <div class="social-links">
         <div>
           <a
             href="https://github.com/johnietre"
@@ -278,81 +287,16 @@
     </div>
   </footer>
 
-  <div id="base-search-div" hidden>
-    <h3 style="text-align:left;color:black">Search</h3>
+  <div id="base-search-div" class="base-search-div" hidden>
+    <h3 id="base-search-div-header" style="text-align:left;color:black">Search</h3>
     <div style="margin-bottom:2px">
-      <button id="base-search-cancel">Cancel</button>
+      <button id="base-search-cancel" class="base-search-cancel">Cancel</button>
       <button>Search</button>
     </div>
     <!--<textarea rows="1" cols="80"></textarea>-->
-    <div id="base-search-entry" aria-placeholder="Search..." contenteditable></div>
+    <div id="base-search-entry" class="base-search-entry" aria-placeholder="Search..." contenteditable></div>
   </div>
 </div>
-
-<script>
-(function() {
-const LIGHT_ICON_NAME = "fa-sun-o";
-const DARK_ICON_NAME = "fa-moon-o";
-const SYSTEM_ICON_NAME = "fa-cog";
-
-function cycleTheme() {
-  const toggleIcon = document.querySelector("#dark-light-toggle-icon");
-  let theme = "dark";
-  if (toggleIcon.classList.contains(LIGHT_ICON_NAME)) {
-    theme = "system";
-  } else if (toggleIcon.classList.contains(DARK_ICON_NAME)) {
-    theme = "light";
-  }
-  setTheme(theme);
-  saveTheme(theme);
-}
-
-function setTheme(theme) {
-  const toggleIcon = document.querySelector("#dark-light-toggle-icon");
-  const body = document.body;
-  if (theme == "light") {
-    toggleIcon.classList.remove(DARK_ICON_NAME);
-    toggleIcon.classList.remove(SYSTEM_ICON_NAME);
-    toggleIcon.classList.add(LIGHT_ICON_NAME);
-    body.classList.remove("dark-theme");
-    body.classList.add("light-theme");
-  } else if (theme == "system") {
-    toggleIcon.classList.remove(LIGHT_ICON_NAME);
-    toggleIcon.classList.remove(DARK_ICON_NAME);
-    toggleIcon.classList.add(SYSTEM_ICON_NAME);
-    body.classList.remove("light-theme");
-    body.classList.remove("dark-theme");
-  } else {
-    toggleIcon.classList.remove(SYSTEM_ICON_NAME);
-    toggleIcon.classList.remove(LIGHT_ICON_NAME);
-    toggleIcon.classList.add(DARK_ICON_NAME);
-    body.classList.remove("light-theme");
-    body.classList.add("dark-theme");
-  }
-}
-
-const THEME_KEY = "johnietre-theme";
-
-function saveTheme(theme) {
-  window.localStorage.setItem(THEME_KEY, theme);
-}
-
-function loadTheme() {
-  const theme = window.localStorage.getItem(THEME_KEY);
-  switch (theme) {
-  case "light":
-  case "system":
-    return theme;
-  default:
-    return "dark";
-  }
-}
-
-setTheme(loadTheme());
-
-window.cycleTheme = cycleTheme;
-})()
-</script>
 
 {{if .ExtraHtmlBody}}{{.ExtraHtmlBody}}{{end}}
 </body>

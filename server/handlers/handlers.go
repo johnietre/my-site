@@ -18,6 +18,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fsnotify/fsnotify"
 	jwt "github.com/golang-jwt/jwt/v5"
 	jmux "github.com/johnietre/go-jmux"
 	"github.com/johnietre/gory-proxy"
@@ -73,6 +74,8 @@ type Config struct {
 	AdminConfig       AdminConfig
 	ExtraHtmlHeadPath *string
 	ExtraHtmlBodyPath *string
+	AutoParse         bool
+	AutoParseInterval int64
 }
 
 func InitHandlers(config Config) error {
@@ -119,6 +122,20 @@ func InitHandlers(config Config) error {
 		log.Printf("loaded %d proxy server(s)", len(srvrs))
 	}
 	proxy.SaveOnChangeTo(config.ProxyServersPath)
+
+	if config.AutoParseInterval != 0 {
+		go func() {
+			if err := autoParseTmplsNaive(); err != nil {
+				log.Printf("error running auto-parse-interval: %v", err)
+			}
+		}()
+	} else if config.AutoParse {
+		go func() {
+			if err := autoParseTmpls(); err != nil {
+				log.Printf("error running auto-parse: %v", err)
+			}
+		}()
+	}
 	return nil
 }
 
@@ -151,6 +168,10 @@ func CreateRouter(staticDir string) http.Handler {
 	}
 	router.All("/products", createProductsRouter()).MatchAny(jmux.MethodsAll())
 
+	router.GetFunc("/resume.pdf", func(c *jmux.Context) {
+		c.WriteFile(filepath.Join(staticDir, "resume.pdf"))
+	})
+
 	router.All("/admin/", createAdminRouter()).MatchAny(jmux.MethodsAll())
 
 	router.Get("/privacy", createPolicyHandler("privacy"))
@@ -179,6 +200,7 @@ func createBaseRouter() jmux.Handler {
 			homeHandler(c)
 			return
 		}
+		c.NotFound("Page not found")
 	}).MatchAny(jmux.MethodsGet())
 	return router
 }
@@ -255,13 +277,24 @@ func defaultHandler(c *jmux.Context) {
 }
 
 func homeHandler(c *jmux.Context) {
+	type HomePageData struct {
+		Products []products.Product
+		repos.ReposPageData
+	}
+
 	w, r := c.Writer, c.Request
 	path := cleanPath(r.URL.Path)
 	if path != "" && path != "home" {
 		http.NotFound(w, r)
 		return
 	}
-	data := PageData{Active: "home", Data: repos.NewReposPageData()}
+	data := PageData{
+		Active: "home",
+		Data: HomePageData{
+			Products:      products.GetRandomProducts(3),
+			ReposPageData: repos.NewReposPageData(),
+		},
+	}
 	execTmplWithExtra("home", c, data)
 }
 
@@ -718,7 +751,6 @@ func adminProductsEditHandler(c *jmux.Context) {
 		prod.Webpage = c.Request.FormValue("webpage")
 		prod.AppStoreLink = c.Request.FormValue("app-store-link")
 		prod.PlayStoreLink = c.Request.FormValue("play-store-link")
-		prod.Images = c.Request.Form["images"]
 	default:
 		c.WriteError(http.StatusBadRequest, "invalid Content-Type")
 		return
@@ -765,7 +797,6 @@ func adminProductsNewHandler(c *jmux.Context) {
 		prod.Webpage = c.Request.FormValue("webpage")
 		prod.AppStoreLink = c.Request.FormValue("app-store-link")
 		prod.PlayStoreLink = c.Request.FormValue("play-store-link")
-		prod.Images = c.Request.Form["images"]
 		hiddenStr := c.Request.FormValue("hidden")
 		prod.Hidden, err = strconv.ParseBool(hiddenStr)
 		if hiddenStr != "" && err != nil {
@@ -849,7 +880,8 @@ func adminProductsIssueEditHandler(c *jmux.Context) {
 	switch ctype {
 	case "application/json":
 		if err := c.ReadBodyJSON(&issue); err != nil {
-			println(err.Error())
+			// todo: error handling
+			//println(err.Error())
 			c.WriteError(http.StatusBadRequest, "bad json")
 			return
 		}
@@ -1254,6 +1286,111 @@ func loadTmpl(tmplName string) error {
 	}
 	tmpls.Store(tmplName, tmpl)
 	return nil
+}
+
+func autoParseTmpls() error {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		return err
+	}
+	defer watcher.Close()
+	if err := watcher.Add(tmplsDir); err != nil {
+		return err
+	}
+	if err := watcher.Add(filepath.Join(tmplsDir, "admin")); err != nil {
+		return err
+	}
+	for {
+		select {
+		case ev, ok := <-watcher.Events:
+			if !ok {
+				return nil
+			}
+
+			if !ev.Has(fsnotify.Create) && !ev.Has(fsnotify.Write) && !ev.Has(fsnotify.Rename) {
+				continue
+			}
+
+			if filepath.Ext(ev.Name) != ".tmpl" {
+				continue
+			}
+			doParseTmpl(ev.Name)
+		case err, ok := <-watcher.Errors:
+			if !ok {
+				return nil
+			}
+			log.Printf("error watching templates: %v", err)
+		}
+	}
+}
+
+func autoParseTmplsNaive() error {
+	modTimes := utils.NewMap[string, time.Time]()
+	adminDir := filepath.Join(tmplsDir, "admin")
+	ticker := time.NewTicker(time.Second * time.Duration(cfg.AutoParseInterval))
+	for range ticker.C {
+		for _, dir := range []string{tmplsDir, adminDir} {
+			ents, err := os.ReadDir(dir)
+			if err != nil {
+				log.Printf("error reading dir %s: %v", dir, err)
+				continue
+			}
+			for _, ent := range ents {
+				name := ent.Name()
+				ext := filepath.Ext(name)
+				if ext != ".tmpl" {
+					continue
+				}
+				path := filepath.Join(dir, name)
+				info, err := ent.Info()
+				if err != nil {
+					log.Printf("error getting info for %s: %v", path, err)
+					continue
+				}
+				modTime := info.ModTime()
+				if prev, ok := modTimes.GetOk(path); !ok {
+					modTimes.Set(path, modTime)
+					continue
+				} else if !modTime.After(prev) {
+					continue
+				}
+				doParseTmpl(path)
+				modTimes.Set(path, modTime)
+			}
+		}
+	}
+	return nil
+}
+
+// Expects path to be a file with a ".tmpl" suffix
+func doParseTmpl(path string) {
+	dir, file := filepath.Split(path)
+	name := file[:len(file)-5]
+	isBase, isAdmin := name == "base", false
+	if filepath.Base(dir) == "admin" {
+		name = ""
+		isAdmin = true
+	}
+
+	var toParse []string
+	for _, tname := range tmplNames {
+		if tname == name {
+			toParse = []string{tname}
+			break
+		}
+		if isBase && isAdmin == strings.HasPrefix(tname, "admin/") {
+			toParse = append(toParse, tname)
+		}
+	}
+	if len(toParse) == 0 {
+		return
+	}
+
+	for _, name := range toParse {
+		if err := loadTmpl(name); err != nil {
+			log.Printf("error parsing %s: %v", name, err)
+		}
+	}
 }
 
 func createPolicyHandler(name string) jmux.Handler {

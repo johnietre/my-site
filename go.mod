@@ -7,7 +7,7 @@ toolchain go1.24.5
 require (
 	github.com/caddyserver/certmagic v0.24.0
 	github.com/golang-jwt/jwt/v5 v5.2.0
-	github.com/johnietre/go-jmux v0.0.0-20241231094248-d4891e13d9d2
+	github.com/johnietre/go-jmux v0.0.0-20251222173324-d3a6d66ca3f8
 	github.com/johnietre/gory-proxy v0.0.0-20251014200633-ba192c57ee9f
 	github.com/johnietre/utils/go v0.0.0-20250218232934-71098e757d4f
 	github.com/mattn/go-sqlite3 v1.14.22
@@ -17,6 +17,7 @@ require (
 
 require (
 	github.com/caddyserver/zerossl v0.1.3 // indirect
+	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.10 // indirect
 	github.com/libdns/libdns v1.0.0 // indirect

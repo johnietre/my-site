@@ -1,3 +1,15 @@
+input {
+  border-radius: 5px;
+}
+
+textarea {
+  border-radius: 5px;
+}
+
+select {
+  border-radius: 5px;
+}
+
 .products-product-list {
   display: flex;
   flex-direction: row;
@@ -12,9 +24,8 @@
   justify-content: center;
   align-items: center;
   width: 90vw;
-  border: 1px solid black;
-  border-radius: 10px;
-  margin: 5px;
+  min-width: 370px;
+  margin: 7px;
   padding: 5px;
 }
 
@@ -41,7 +52,8 @@
   margin: 10px;
 }
 
-.products-product-card-links > .products-product-card-store-link:not(:first-child) {
+.products-product-card-links
+  > .products-product-card-store-link:not(:first-child) {
   margin: 0 15px;
 }
 
@@ -60,13 +72,24 @@
   overflow-y: auto;
 }
 
-#products-review-form {
+.products-product-card-image-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.products-product-card-image {
+  max-width: min(45vw, 400px);
+  max-height: min(calc(45vw - 100px), 300px);
+}
+
+.products-review-form {
   display: grid;
   grid-template-rows: 1fr 1fr 1fr 3fr;
   margin: 5px;
 }
 
-#products-review-form > div {
+.products-review-form > div {
   margin: 5px;
 }
 
@@ -88,12 +111,14 @@
   /*align-items: center;*/
 }
 
-#products-review-form textarea {
+.products-review-form textarea {
   font-family: monospace;
   resize: none;
 }
 
-#products-review-form input, #products-review-form textarea, #products-review-form select {
+.products-review-form input,
+.products-review-form textarea,
+.products-review-form select {
   width: 90%;
   /*width: 100ch;*/
   border: none;
@@ -105,7 +130,7 @@
   background-color: var(--input-background-color);
 }
 
-#products-review-buttons {
+.products-review-buttons {
   display: flex;
   flex-direction: row;
   justify-content: center;
@@ -115,23 +140,8 @@
 .products-review-button {
   display: block;
   margin: 10px 20px;
-  color: var(--color);
-  font-size: 18px;
-  padding: 10px;
-  border: 1px solid var(--border-color);
-  border-radius: 30px;
+  font-size: 1.2rem;
   background-color: transparent;
-}
-
-.products-review-button:hover {
-  cursor: pointer;
-  /*
-  color: aqua;
-  border-color: aqua;
-  */
-  color: black;
-  background-color: aqua;
-  border-color: aqua;
 }
 
 .products-review-error-resp {
@@ -141,8 +151,8 @@
 }
 
 /*
-#products-review-clear-button {}
-#products-review-submit-button {}
+.products-review-clear-button {}
+.products-review-submit-button {}
 */
 
 @media (min-width: 780px) {

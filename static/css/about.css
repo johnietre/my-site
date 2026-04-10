@@ -2,7 +2,8 @@
   /*font-size: 20px;*/
 }
 
-article, section {
+article,
+section {
   width: 100%;
 }
 
@@ -16,26 +17,29 @@ article, section {
 }
 */
 
-#main {
+/*
+.main-container {
   display: flex;
   flex-direction: column;
   width: 100%;
   align-items: center;
 }
+*/
 
-#about-contact-info {
+.about-contact-info {
   text-align: center;
   display: flex;
   flex-direction: row;
   justify-content: center;
 }
 
-#about-contact-info > span {
+.about-contact-info > span {
   margin: 5px 20px;
   text-align: center;
 }
 
-#content {
+.main {
+  margin: auto;
   width: 90%;
   display: flex;
   flex-direction: column;
@@ -46,13 +50,19 @@ article, section {
   */
 }
 
-#about-me-img {
+.about-me-img-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.about-me-img {
   width: 400px;
   max-width: 100%;
   margin: auto;
 }
 
-#about-who-i-am {
+.about-who-i-am {
   display: flex;
   flex-direction: column-reverse;
   gap: 25px;
@@ -68,7 +78,7 @@ article, section {
 }
 
 @media (min-width: 780px) {
-  #about-who-i-am {
+  .about-who-i-am {
     flex-direction: row;
   }
 

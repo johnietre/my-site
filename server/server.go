@@ -103,11 +103,22 @@ func makeRunCmd() *cobra.Command {
 
 	flags.String("log", "", "Path to log file (empty routes to stderr)")
 
-	flags.Bool("no-repos", false, "Disable repository refreshing")
 	flags.Bool(
 		"autotls",
 		false,
 		"TLS automation through certmagic (provide domain name rather than IP:PORT address); the email address used to for the ACME server account can be specified with the MY_SITE_ACME_EMAIL environment variable",
+	)
+
+	flags.Bool("no-repos", false, "Disable repository refreshing")
+	flags.Bool(
+		"auto-parse",
+		false,
+		"Watch templates dir and automatically parse on changes; if filesystem events don't work, use auto-parse-interval with a non-zero value",
+	)
+	flags.Int64(
+		"auto-parse-interval",
+		0,
+		"The interval to check for template modifications (does not use filesystem events); implies --auto-parse",
 	)
 	cmd.MarkFlagsMutuallyExclusive("autotls", "cert")
 	return cmd
@@ -141,9 +152,11 @@ func run(cmd *cobra.Command, args []string) {
 
 	logPath := utils.Must(flags.GetString("log"))
 
-	noRepos := utils.Must(flags.GetBool("no-repos"))
-
 	autotls := utils.Must(flags.GetBool("autotls"))
+
+	noRepos := utils.Must(flags.GetBool("no-repos"))
+	autoParse := utils.Must(flags.GetBool("auto-parse"))
+	autoParseInterval := utils.Must(flags.GetInt64("auto-parse-interval"))
 
 	if logPath != "" {
 		f, err := utils.OpenAppend(logPath)
@@ -186,10 +199,12 @@ func run(cmd *cobra.Command, args []string) {
 	}
 
 	handlersConfig := handlers.Config{
-		ProxyServersPath: proxyServersPath,
-		TmplsDirPath:     tmplsDir,
-		RemoteIP:         remoteIP,
-		AdminConfig:      adminConfig,
+		ProxyServersPath:  proxyServersPath,
+		TmplsDirPath:      tmplsDir,
+		RemoteIP:          remoteIP,
+		AdminConfig:       adminConfig,
+		AutoParse:         autoParse,
+		AutoParseInterval: autoParseInterval,
 	}
 	if extraHtmlHeadPath != "" {
 		handlersConfig.ExtraHtmlHeadPath = utils.NewT(extraHtmlHeadPath)

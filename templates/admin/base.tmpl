@@ -17,7 +17,7 @@
 <body>
 <div id="app">
 
-  <nav id="nav-bar">
+  <nav class="nav-bar">
     <div class="nav-bar-content">
       <div class="nav-bar-logo">
         <a href="../admin" title="Admin">
@@ -27,15 +27,16 @@
       <div class="nav-bar-spacer" style="flex:1">
         <span style="text-align:center;color:black;width:100%;height:100%">ADMIN</span>
       </div>
-      <div class="nav-dark-light-toggle">
+      <div class="nav-bar-theme-toggle">
         <button
-          id="dark-light-toggle-button"
+          id="nav-bar-theme-toggle-button"
+          class="nav-bar-theme-toggle-button"
           title="Change Theme" onclick="cycleTheme()"
         >
-          <span id="dark-light-toggle-icon" class="fa fa-lg"></span>
+          <span id="nav-bar-theme-toggle-icon" class="nav-bar-theme-toggle-icon fa fa-lg"></span>
         </button>
       </div>
-      <div id="nav-bar-full">
+      <div class="nav-bar-full">
         <ul class="nav-links">
           <li class="nav-link-item"><a
               class="
@@ -102,14 +103,14 @@
         </ul>
       </div>
 
-      <div id="nav-bar-mini">
+      <div class="nav-bar-mini">
         <div class="nav-bar-burger-container">
           <button
             onclick="toggleMiniPopup()"
             class="nav-bar-burger-button"
             >
             <svg
-              id="nav-bar-burger-open"
+              class="nav-bar-burger-open"
               xmlns="http://www.w3.org/2000/svg"
               width="40" height="40"
               viewBox="0 0 40 40" fill="none">
@@ -118,7 +119,7 @@
               <line x1="5" x2="35" y1="30" y2="30" stroke="black" stroke-width="2"/>
             </svg>
             <svg
-              id="nav-bar-burger-close"
+              class="nav-bar-burger-close"
               xmlns="http://www.w3.org/2000/svg"
               width="40" height="40"
               viewBox="0 0 40 40" fill="none"
@@ -132,7 +133,7 @@
     </div>
   </nav>
 
-  <div id="nav-mini-popup" hidden>
+  <div class="nav-mini-popup" hidden>
     <ul class="nav-links">
       <li class="nav-link-item"><a
           class="
@@ -178,14 +179,14 @@
     </ul>
   </div>
 
-  <div id="main">
+  <div id="main" class="main-container">
   {{block "main" .}}{{end}}
   </div>
 
-  <footer id="footer">
-    <div id="footer-content">
-      <div id="copyright">© 2023 - 2025 JohnieTre</div>
-      <div id="footer-links">
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="copyright">© 2023 - 2025 JohnieTre</div>
+      <div class="footer-links">
         <div class="nav-link-item footer-link-item">
           <a
             class="
@@ -220,7 +221,7 @@
           >Terms</a>
         </div>
       </div>
-      <div id="social-links">
+      <div class="social-links">
         <div>
           <a
             href="https://github.com/johnietre"
@@ -238,71 +239,6 @@
   </footer>
 
 </div>
-
-<script>
-(function() {
-const LIGHT_ICON_NAME = "fa-sun-o";
-const DARK_ICON_NAME = "fa-moon-o";
-const SYSTEM_ICON_NAME = "fa-cog";
-
-function cycleTheme() {
-  const toggleIcon = document.querySelector("#dark-light-toggle-icon");
-  let theme = "dark";
-  if (toggleIcon.classList.contains(LIGHT_ICON_NAME)) {
-    theme = "system";
-  } else if (toggleIcon.classList.contains(DARK_ICON_NAME)) {
-    theme = "light";
-  }
-  setTheme(theme);
-  saveTheme(theme);
-}
-
-function setTheme(theme) {
-  const toggleIcon = document.querySelector("#dark-light-toggle-icon");
-  const body = document.body;
-  if (theme == "light") {
-    toggleIcon.classList.remove(DARK_ICON_NAME);
-    toggleIcon.classList.remove(SYSTEM_ICON_NAME);
-    toggleIcon.classList.add(LIGHT_ICON_NAME);
-    body.classList.remove("dark-theme");
-    body.classList.add("light-theme");
-  } else if (theme == "system") {
-    toggleIcon.classList.remove(LIGHT_ICON_NAME);
-    toggleIcon.classList.remove(DARK_ICON_NAME);
-    toggleIcon.classList.add(SYSTEM_ICON_NAME);
-    body.classList.remove("light-theme");
-    body.classList.remove("dark-theme");
-  } else {
-    toggleIcon.classList.remove(SYSTEM_ICON_NAME);
-    toggleIcon.classList.remove(LIGHT_ICON_NAME);
-    toggleIcon.classList.add(DARK_ICON_NAME);
-    body.classList.remove("light-theme");
-    body.classList.add("dark-theme");
-  }
-}
-
-const THEME_KEY = "johnietre-theme";
-
-function saveTheme(theme) {
-  window.localStorage.setItem(THEME_KEY, theme);
-}
-
-function loadTheme() {
-  const theme = window.localStorage.getItem(THEME_KEY);
-  switch (theme) {
-  case "light":
-  case "system":
-    return theme;
-  default:
-    return "dark";
-  }
-}
-
-setTheme(loadTheme());
-
-window.cycleTheme = cycleTheme;
-})()
-</script>
 
 </body>
 
