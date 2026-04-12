@@ -129,10 +129,10 @@
         </div>
       </div>
     </div>
-  </nav>
 
   <div id="nav-mini-popup" class="nav-mini-popup" hidden>
     <ul class="nav-links">
+      <!-- TODO
       <li class="nav-link-item nav-mini-search-container">
         <input
           id="nav-mini-search-input" class="nav-mini-search-input"
@@ -162,6 +162,7 @@
           </svg>
         </button>
       </li>
+      -->
       <li class="nav-link-item"><a
           class="
           nav-link
@@ -178,6 +179,7 @@
           href="./about"
           title="About"
           >About</a></li>
+      {{if .HasBlog}}
       <li class="nav-link-item"><a
           class="
           nav-link
@@ -195,6 +197,7 @@
           title="Journal"
           >Journal</a>
       </li>
+      {{end}}
       <li class="nav-link-item"><a
           class="
           nav-link
@@ -205,6 +208,7 @@
           >Products</a></li>
     </ul>
   </div>
+  </nav>
 
   <div class="main-container">
   {{template "main" .}}

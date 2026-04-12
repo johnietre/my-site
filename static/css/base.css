@@ -497,6 +497,7 @@ p {
   height: 50px !important;
   line-height: 50px !important;
   text-align: center;
+  color: black;
 }
 
 .nav-bar-theme-toggle-icon:hover {
