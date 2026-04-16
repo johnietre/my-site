@@ -106,7 +106,7 @@ func makeRunCmd() *cobra.Command {
 	flags.Bool(
 		"autotls",
 		false,
-		"TLS automation through certmagic (provide domain name rather than IP:PORT address); the email address used to for the ACME server account can be specified with the MY_SITE_ACME_EMAIL environment variable",
+		"TLS automation through certmagic (provide domain name(s) rather than IP:PORT address); the email address used to for the ACME server account can be specified with the MY_SITE_ACME_EMAIL environment variable",
 	)
 
 	flags.Bool("no-repos", false, "Disable repository refreshing")
@@ -127,9 +127,9 @@ func makeRunCmd() *cobra.Command {
 func run(cmd *cobra.Command, args []string) {
 	flags := cmd.Flags()
 
-	addr := flags.Arg(0)
-	if addr == "" {
-		addr = "127.0.0.1:8000"
+	addr := flags.Args()
+	if len(addr) == 0 {
+		addr = []string{"127.0.0.1:8000"}
 	}
 
 	baseDir := utils.Must(flags.GetString("base-dir"))
@@ -245,6 +245,11 @@ func RunServer(
 	// Most of this code was copied from certmagic.HTTPS/certmagic.TLS functions.
 	ctx := context.Background()
 
+	if len(cfg.Addr) == 0 {
+		log.Fatal("expected at least 1 addr")
+	}
+	addr := cfg.Addr[0]
+
 	var httpLn net.Listener
 	var tlsConf *tls.Config
 	var certCfg *certmagic.Config
@@ -257,7 +262,7 @@ func RunServer(
 		}
 		certCfg = certmagic.NewDefault()
 		tlsConf = certCfg.TLSConfig()
-		if err := certCfg.ManageSync(ctx, []string{cfg.Addr}); err != nil {
+		if err := certCfg.ManageSync(ctx, cfg.Addr); err != nil {
 			return err
 		}
 		lc, err := newListenConfig(), error(nil)
@@ -269,11 +274,13 @@ func RunServer(
 			[]string{"h2", "http/1.1"},
 			tlsConf.NextProtos...,
 		)
-		cfg.Addr = ":443"
+		addr = ":443"
+	} else if l := len(cfg.Addr); l != 1 {
+		log.Fatal("expected 1 addr, got ", l)
 	}
 
 	lc := newListenConfig()
-	httpsLn, err := lc.Listen(ctx, "tcp", cfg.Addr)
+	httpsLn, err := lc.Listen(ctx, "tcp", addr)
 	if err != nil {
 		log.Fatalf("error starting listener: %v", err)
 	}
@@ -418,7 +425,7 @@ func makeConfigCmd() *cobra.Command {
 }
 
 type RunServerConfig struct {
-	Addr                         string
+	Addr                         []string
 	StaticDir, KeyPath, CertPath string
 	Autotls                      bool
 	ACMEEmail                    string
