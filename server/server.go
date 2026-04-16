@@ -52,7 +52,7 @@ func makeRunCmd() *cobra.Command {
 		Use:                   "run [FLAGS] [ADDR (default: 127.0.0.1:8000)]",
 		Short:                 "Run the server",
 		Long:                  "Run the server.",
-		Args:                  cobra.MaximumNArgs(1),
+		//Args:                  cobra.MaximumNArgs(1),
 		DisableFlagsInUseLine: true,
 		Run:                   run,
 	}
