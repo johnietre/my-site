@@ -37,25 +37,18 @@ If, on the REMOTE chance, a rehash is required, increment the timestamp.
 
 # TODO
 
-- [X] Add static page from site below
-    - https://support.google.com/admob/answer/9363762?hl=en#zippy=%2Cview-an-example-app-adstxt-file
-- [X] Merge instances of "style" and "script" into "head" block in templates
-- [X] Add box shadow to cards
-- [X] Add resume
-- [X] Description text color
+- [ ] Add images to products
+- [ ] Allow resume update from admin
+- [ ] Auto-generate Copyright year
+- [ ] Request tracking/logging
 
 # todo
 
-- [ ] Add images to products
-
-- [ ] Allow resume update from admin
-- [ ] Auto-generate Copyright year
 - [ ] Possibly make the IPs environ vars
-- [ ] Admin work (make goals for this more SMART)
+- [ ] Admin work (make work-goals for this more SMART)
 - [ ] When submitting product review, remove platform options invalid for product
 - [ ] Log when product/issue created/edited
 - [ ] Option to pass config file with CLI opts
-- [ ] Request tracking/logging
 - [ ] Make robots.txt requests to APIs to add to overall robots.txt
 - [ ] Fix indicators files
 - [ ] Custom error pages (404, 500, 401, etc.)
