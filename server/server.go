@@ -49,9 +49,9 @@ func Run() {
 
 func makeRunCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:                   "run [FLAGS] [ADDR (default: 127.0.0.1:8000)]",
-		Short:                 "Run the server",
-		Long:                  "Run the server.",
+		Use:   "run [FLAGS] [ADDR (default: 127.0.0.1:8000)]",
+		Short: "Run the server",
+		Long:  "Run the server.",
 		//Args:                  cobra.MaximumNArgs(1),
 		DisableFlagsInUseLine: true,
 		Run:                   run,
@@ -82,7 +82,7 @@ func makeRunCmd() *cobra.Command {
 	)
 	flags.String(
 		"proxy-servers-path",
-		"$(base-dir)/ignored/proxy-severs.json",
+		"$(base-dir)/ignored/proxy-servers.json",
 		"Path to file for saving proxy servers",
 	)
 	flags.String(
@@ -96,7 +96,7 @@ func makeRunCmd() *cobra.Command {
 
 	flags.String(
 		"admin-config",
-		"$(base-dir)/server/admin-config.json",
+		"$(base-dir)/ignored/admin-config.json",
 		"Path to admin config file",
 	)
 	flags.String("remote-ip", "", "Remote IP to check for to parse")
@@ -420,7 +420,7 @@ func makeConfigCmd() *cobra.Command {
 	}
 	flags := cmd.Flags()
 
-	flags.String("new-admin", "", "Create admin config file")
+	flags.String("new-admin", "", "Create admin config file at the specified path")
 	return cmd
 }
 
